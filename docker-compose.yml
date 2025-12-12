@@ -6,7 +6,7 @@ services:
     container_name: ianorth-backend
     restart: always
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./backend/ianorth_sucata_v2.db:/app/ianorth_sucata_v2.db
       - ./backend/src/static:/app/src/static

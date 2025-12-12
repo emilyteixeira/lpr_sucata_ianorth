@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Camera, ShieldCheck, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config'; 
 
 export function Settings() {
   const [ip, setIp] = useState('');
@@ -11,7 +12,7 @@ export function Settings() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/config/camera')
+    fetch(`${API_BASE_URL}/config/camera`)
       .then(res => res.json())
       .then(data => {
         if(data.ip_address) {
@@ -20,7 +21,8 @@ export function Settings() {
             setPass(data.password);
             setActive(data.is_active);
         }
-      });
+      })
+      .catch(e => console.error("Erro ao carregar configs:", e));
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -29,7 +31,7 @@ export function Settings() {
     setMsg(null);
 
     try {
-        const res = await fetch('http://127.0.0.1:8000/config/camera', {
+        const res = await fetch(`${API_BASE_URL}/config/camera`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Search, Filter, Download } from 'lucide-react';
 import { EventsTable } from '../components/dashboard/EventsTable';
 import { MediaModal } from '../components/dashboard/MediaModal';
+import { API_BASE_URL } from '../config'; 
 import type { EventoLPR } from '../types';
 
 export function History() {
@@ -15,12 +16,13 @@ export function History() {
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/eventos/')
+    fetch(`${API_BASE_URL}/eventos/`)
       .then(res => res.json())
       .then(data => {
         setEventos(data);
         setLoading(false);
-      });
+      })
+      .catch(err => console.error("Erro ao carregar histórico:", err));
   }, []);
 
   const eventosFiltrados = eventos.filter(evt => {
