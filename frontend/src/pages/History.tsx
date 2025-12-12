@@ -16,7 +16,6 @@ export function History() {
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
   useEffect(() => {
-    // CORREÇÃO: Usando a URL dinâmica
     fetch(`${API_BASE_URL}/eventos/`)
       .then(res => res.json())
       .then(data => {
