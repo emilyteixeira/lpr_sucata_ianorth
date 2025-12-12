@@ -8,7 +8,7 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./backend/app
+      ./backend/ianorth_sucata_v2.db:/app/ianorth_sucata_v2.db
       - ./backend/src/static:/app/src/static
 
   frontend:
