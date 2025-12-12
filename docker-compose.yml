@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: ianorth-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/ianorth_sucata_v2.db:/app/ianorth_sucata_v2.db
+      - ./backend/src/static:/app/src/static
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+    container_name: ianorth-frontend
+    restart: always
+    ports:
+      - "3000:80" 
+    depends_on:
+      - backend
