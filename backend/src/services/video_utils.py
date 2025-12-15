@@ -23,7 +23,8 @@ def gravar_video_evento(ip, user, password, nome_arquivo, duracao=15):
         "-rtsp_transport", "tcp", # Usa TCP para não falhar a imagem
         "-i", rtsp_url,           # Entrada
         "-c:v", "libx264",        # CODEC OBRIGATÓRIO PARA CHROME/WEB
-        "-preset", "ultrafast",   # Grava rápido
+        "-preset", "ultrafast", # Grava rápido
+        "-movflags", "+faststart",
         "-an",                    # Remove áudio (opcional, evita erros de sync)
         caminho_completo
     ]
