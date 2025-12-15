@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Truck, Scale, MapPin, Calendar, Camera, PlayCircle, Edit3, Save, X } from 'lucide-react';
 import type { EventoLPR } from '../types';
-import { API_BASE_URL, getMediaUrl } from '../config';
+import { API_BASE_URL, getMediaUrl } from '../config'; 
 
 export function TicketDetails() {
   const { id } = useParams();
@@ -240,7 +240,8 @@ export function TicketDetails() {
             <div className="aspect-video bg-black flex items-center justify-center">
                 {ticket.video_url ? (
                     <video controls className="w-full h-full">
-                        <source src={`http://127.0.0.1:8000${ticket.video_url}`} type="video/mp4" />
+                        <source src={getMediaUrl(ticket.video_url)} type="video/mp4" />
+                        Seu navegador não suporta vídeos.
                     </video>
                 ) : <span className="text-slate-500 text-sm">Sem gravação</span>}
             </div>

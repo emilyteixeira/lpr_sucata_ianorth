@@ -9,7 +9,7 @@ from typing import List
 import os
 
 from src import models, database, schemas
-from src.services import services_mock
+# from src.services import services_mock  
 from src.services.intelbras_listener import IntelbrasLPRListener
 from src.services.mock_intelbras import MockIntelbrasListener
 from src.services.camera_utils import salvar_snapshot_camera
@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 monitor = None
+
 
 MODO_DESENVOLVIMENTO = os.getenv("MODO_DESENVOLVIMENTO", "False").lower() == "true"
 
@@ -63,7 +64,17 @@ def processar_evento_camera(placa: str, origem: str):
         final_snapshot_url = "/imagens/mock.jpg"
         final_video_url = "/imagens/mock.jpg"
 
-    dados_erp = services_mock.consultar_sistemas_sinobras(placa)
+    
+    dados_erp = {
+        'ticket_id': 0,         
+        'status_ticket': 'ABERTO',  
+        'fornecedor': '',           
+        'produto': '',              
+        'nota_fiscal': '',          
+        'tipo_veiculo': 'CAMINHAO', 
+        'peso_nf': 0,               
+        'peso_balanca': 0           
+    }
     
     try:
         evento = models.EventoVMS(
@@ -86,7 +97,7 @@ def processar_evento_camera(placa: str, origem: str):
         )
         db.add(evento)
         db.commit()
-        print(f"Evento salvo: Ticket #{evento.ticket_id}")
+        print(f"Evento salvo: Ticket #{evento.ticket_id} (Aguardando Edição Manual)")
         
     except Exception as e:
         print(f"Erro ao salvar no banco: {e}")
@@ -197,7 +208,7 @@ def atualizar_evento(evento_id: int, dados: schemas.EventoUpdate, db: Session = 
     try:
         db.commit()
         db.refresh(evento)
-        print("Evento #{evento_id} atualizado manualmente.")
+        print(f"Evento #{evento_id} atualizado manualmente.")
         return evento
     except Exception as e:
         db.rollback()
