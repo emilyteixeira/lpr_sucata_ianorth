@@ -9,7 +9,8 @@ from typing import List
 import os
 
 from src import models, database, schemas
-# from src.services import services_mock  
+from src.services import services_mock  
+from src.services import sinobras
 from src.services.intelbras_listener import IntelbrasLPRListener
 from src.services.mock_intelbras import MockIntelbrasListener
 from src.services.camera_utils import salvar_snapshot_camera
@@ -40,6 +41,7 @@ def processar_evento_camera(placa: str, origem: str):
     timestamp_file = timestamp_obj.strftime("%Y%m%d_%H%M%S")
     
     db = database.SessionLocal()
+
     config = db.query(models.CameraConfig).first()
     
     final_snapshot_url = None
@@ -75,11 +77,47 @@ def processar_evento_camera(placa: str, origem: str):
         final_video_url = "/imagens/mock.jpg"
 
     dados_erp = {
-        'ticket_id': 0, 'status_ticket': 'ABERTO', 'fornecedor': '',           
-        'produto': '', 'nota_fiscal': '', 'tipo_veiculo': 'CAMINHAO', 
-        'peso_nf': 0, 'peso_balanca': 0           
+        'ticket_id': 0, 
+        'status_ticket': 'N/A', 
+        'fornecedor': '',           
+        'produto': '',
+        'nota_fiscal': '',
+        'tipo_veiculo': 'CAMINHAO', 
+        'peso_nf': 0, 
+        'peso_balanca': 0           
     }
     
+    try:
+
+        dados_api = sinobras.consultar_truck_arrival(placa)
+
+        if dados_api:
+            print(" Dados encontrados na Sinobras!")
+            origem_dado = "SINOBRAS_API"
+            dados_erp['ticket_id'] = dados_api.get('ticket', '0')
+            dados_erp['status_ticket'] = dados_api.get('status', 'Classificado')
+            dados_erp['fornecedor'] = dados_api.get('fornecedor', '')
+            dados_erp['produto'] = dados_api.get('tipoProduto', '')
+            dados_erp['nota_fiscal'] = dados_api.get('notaFiscal', '')
+            dados_erp['tipo_veiculo'] = dados_api.get('tipoVeiculo', 'Caminhao')
+            dados_erp['peso_balanca'] = float(dados_api.get('pesagemInicial', 0.0))
+
+        
+        else:
+            print(" Sinobras não retornou. Usando Mock local.")
+            origem_dado = "MOCK_FALLBACK"
+            mock_res = services_mock.consultar_sistemas_sinobras(placa)
+            
+            dados_erp['ticket_id'] = str(mock_res.get('ticket_id', 0))
+            dados_erp['status_ticket'] = mock_res.get('status_ticket', 'Simulado')
+            dados_erp['fornecedor'] = mock_res.get('fornecedor', 'Forn. Mock')
+            dados_erp['peso_balanca'] = mock_res.get('peso_balanca', 0.0)
+            dados_erp['peso_nf'] = dados_api.get('peso_nf', 0)
+
+
+    except Exception as e:
+        print(f"Erro na integração de dados: {e}")
+
     try:
         evento = models.EventoVMS(
             timestamp_registro=timestamp_str,
