@@ -34,7 +34,7 @@ def get_db():
     finally: db.close()
 
 def processar_evento_camera(placa: str, origem: str):
-    print(f"🚗 Nova placa detectada: {placa}")
+    print(f"Nova placa detectada: {placa}")
     
     timestamp_obj = datetime.now()
     timestamp_str = timestamp_obj.strftime("%Y-%m-%d %H:%M:%S")
@@ -68,7 +68,7 @@ def processar_evento_camera(placa: str, origem: str):
             final_video_url = f"/imagens/videos/{nome_arquivo_video}"
             
         except Exception as e:
-            print(f" Erro ao capturar mídia real: {e}")
+            print(f"Erro ao capturar mídia real: {e}")
     
     elif MODO_DESENVOLVIMENTO:
         final_snapshot_url = "/imagens/mock.jpg"
@@ -89,7 +89,7 @@ def processar_evento_camera(placa: str, origem: str):
         dados_api = sinobras.consultar_truck_arrival(placa) 
 
         if dados_api:
-            print(" Dados encontrados na Sinobras!")
+            print("Dados encontrados na Sinobras!")
             origem_dado = "SINOBRAS_API"
             dados_erp['ticket_id'] = dados_api.get('ticket', '0')
             dados_erp['status_ticket'] = dados_api.get('status', 'Classificado')
@@ -166,10 +166,11 @@ def reload_camera_service():
         monitor = MockIntelbrasListener("0.0.0.0", "admin", "123", processar_evento_camera)
         monitor.start()
     else:
-        print("Aguardando configuração de câmera...")
+        print(" Aguardando configuração de câmera...")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Garante que as pastas de mídia existam
     base_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(base_dir, "static")
     os.makedirs(os.path.join(static_dir, "snapshots"), exist_ok=True)
@@ -255,7 +256,6 @@ def obter_detalhes_evento(evento_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Ticket não encontrado")
     return evento
 
-
 @app.get("/admin/sincronizar-antigos")
 def sincronizar_registros_antigos(db: Session = Depends(get_db)):
     """
@@ -292,13 +292,13 @@ def sincronizar_registros_antigos(db: Session = Depends(get_db)):
                 
                 evento.origem_dado = "SINOBRAS_API (Retroativo)"
                 
-                print(f" Evento {evento.id} ({evento.placa_veiculo}) atualizado com Ticket {evento.ticket_id}")
+                print(f"Evento {evento.id} ({evento.placa_veiculo}) atualizado com Ticket {evento.ticket_id}")
                 atualizados += 1
             else:
                 print(f"Evento {evento.id}: Placa {evento.placa_veiculo} não encontrada na data {data_registro}")
                 
         except Exception as e:
-            print(f" Erro ao processar evento {evento.id}: {e}")
+            print(f"Erro ao processar evento {evento.id}: {e}")
             erros += 1
             continue
 
