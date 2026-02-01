@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean # <--- Adicione Boolean aqui
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean 
 from src.database import Base
 from datetime import datetime
 
@@ -7,7 +7,7 @@ class EventoVMS(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     timestamp_registro = Column(String)
-    placa_veiculo = Column(String, index=True)
+    placa_veiculo = Column(String(50), index=True)
     camera_nome = Column(String)
     
     ticket_id = Column(Integer, nullable=True)

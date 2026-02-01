@@ -1,0 +1,38 @@
+# --- GIT e IDEs ---
+.git
+.gitignore
+.vscode
+.idea
+
+# --- BANCOS DE DADOS (Não queremos isso dentro da imagem) ---
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/ianorth_local.db
+
+
+.env
+backend/.env
+
+
+# Ignora a pasta de vídeos e fotos no contexto de build
+backend/src/static/videos/
+backend/src/static/snapshots/
+src/static/videos/
+src/static/snapshots/
+*.mp4
+*.avi
+*.jpg
+*.png
+
+
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+
+frontend/node_modules
+frontend/dist
+frontend/.npm
