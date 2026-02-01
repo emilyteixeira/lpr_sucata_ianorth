@@ -1,6 +1,9 @@
 FROM python:3.11-slim-bullseye
 
-RUN apt-get update && apt-get install -y \
+
+RUN sed -i 's/deb.debian.org/ftp.br.debian.org/g' /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --fix-missing \
     curl \
     gnupg2 \
     unixodbc \
@@ -14,11 +17,15 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY requirements.txt .
+
+COPY backend/requirements.txt .
+
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
 
-EXPOSE 8000
+COPY backend/ .
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

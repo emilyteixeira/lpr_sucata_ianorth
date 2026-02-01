@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: ianorth-backend
     restart: always
     ports:
@@ -10,11 +12,15 @@ services:
     env_file:
       - ./backend/.env
     volumes:
-      - ./backend/ianorth_sucata_v2.db:/app/ianorth_sucata_v2.db
+      - ./backend/ianorth_local.db:/app/ianorth_local.db
       - ./backend/src/static:/app/src/static
+    environment:
+      - TZ=America/Sao_Paulo
+    extra_hosts:
+      - "agi:10.6.0.36"
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       args:
         VITE_API_URL: "http://192.168.1.82:8030"
@@ -22,6 +28,8 @@ services:
     restart: always
     ports:
       - "8020:80"
+    environment:
+      - TZ=America/Sao_Paulo
     depends_on:
       - backend
     volumes:
