@@ -17,6 +17,7 @@ SQLAlchemy==2.0.44
 starlette==0.50.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+<<<<<<< Updated upstream
 urllib3
 uvicorn
 pyodbc
@@ -24,3 +25,6 @@ sqlalchemy
 pydantic
 requests
 xmltodit
+urllib3==2.5.0
+uvicorn==0.38.0
+requests
