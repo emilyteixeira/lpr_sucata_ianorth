@@ -41,7 +41,7 @@ export function Dashboard() {
         </div>
 
         <div className="flex justify-between items-center pt-4">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
                 Monitoramento em Tempo Real
             </h3>
             <span className="text-xs text-slate-500">Atualizando a cada 2s</span>

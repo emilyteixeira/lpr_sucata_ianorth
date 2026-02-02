@@ -288,7 +288,7 @@ export function TicketDetails() {
 
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
         <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Edit3 size={18} className="text-orange-500"/> Classificação & Avarias
+            <Edit3 size={18} className="text-orange-500"/> Eventos & Impureza
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -313,7 +313,7 @@ export function TicketDetails() {
             <div>
                 <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Fotos de Avaria / Detalhes
+                        Fotos de Impurezas / Detalhes
                     </label>
                     <label className="cursor-pointer bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-bold px-3 py-1 rounded-full hover:bg-orange-200 transition-colors flex items-center gap-1">
                         <Camera size={14}/> 
