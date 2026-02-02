@@ -299,7 +299,7 @@ export function TicketDetails() {
                 {isEditing ? (
                     <textarea 
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 dark:text-slate-200 resize-none"
-                        placeholder="Descreva avarias, objetos estranhos ou observações sobre a carga..."
+                        placeholder="Descreva impurezas, objetos estranhos ou observações sobre a carga..."
                         value={formData.observacao || ''}
                         onChange={e => setFormData({...formData, observacao: e.target.value})}
                     />
