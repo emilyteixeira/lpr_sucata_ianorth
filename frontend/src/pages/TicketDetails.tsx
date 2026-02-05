@@ -328,7 +328,7 @@ export function TicketDetails() {
 
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
         <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Edit3 size={18} className="text-orange-500"/> Classificação & Avarias
+            <Edit3 size={18} className="text-orange-500"/> Eventos & impurezas
         </h3>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
