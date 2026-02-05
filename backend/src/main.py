@@ -1,13 +1,12 @@
 import sys
 import os
 import shutil
-
-from requests import auth
+import requests
+from requests.auth import HTTPDigestAuth
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Response 
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -17,7 +16,6 @@ from pydantic import BaseModel
 from typing import List
 
 from src import models, database, schemas
-from src.services import services_mock
 from src.services import sinobras
 from src.services.intelbras_listener import IntelbrasLPRListener
 from src.services.mock_intelbras import MockIntelbrasListener
@@ -28,15 +26,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 monitor = None
-
 MODO_DESENVOLVIMENTO = os.getenv("MODO_DESENVOLVIMENTO", "False").lower() == "true"
 
 models.Base.metadata.create_all(bind=database.engine)
+
 
 def get_db():
     db = database.SessionLocal()
     try: yield db
     finally: db.close()
+
+def get_garras_config():
+    """Lê configuração das garras do arquivo .env (não usa banco de dados)"""
+    ips = os.getenv("GARRAS_IPS", "").split(",")
+    user = os.getenv("GARRAS_USER", "admin")
+    password = os.getenv("GARRAS_PASS", "")
+
+    garras = []
+    for idx, ip in enumerate(ips):
+        if ip.strip():
+            garras.append({
+                "id": idx,
+                "nome": f"Garra {idx + 1}",
+                "ip": ip.strip(),
+                "user": user,
+                "password": password
+            })
+    return garras
 
 def processar_evento_camera(placa: str, origem: str):
     print(f"Nova placa detectada: {placa}")
@@ -169,34 +185,31 @@ def reload_camera_service():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Garante que as pastas de mídia existam
     base_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(base_dir, "static")
     os.makedirs(os.path.join(static_dir, "snapshots"), exist_ok=True)
     os.makedirs(os.path.join(static_dir, "videos"), exist_ok=True)
     
     reload_camera_service()
-    
     yield
-    
     if monitor: monitor.stop()
-
-
-        
-
 
 
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(base_dir, "static")
 app.mount("/imagens", StaticFiles(directory=static_dir), name="static")
 
-
+# ROTAS DA CÂMERA LPR - BANCO DE DADOS
 
 @app.get("/config/camera", response_model=schemas.CameraConfigSchema)
 def get_camera_config(db: Session = Depends(get_db)):
@@ -223,6 +236,8 @@ def save_camera_config(dados: schemas.CameraConfigSchema, db: Session = Depends(
     db.commit()
     reload_camera_service()
     return {"status": "Configuração salva e câmera reconectada!"}
+
+# ROTAS DE EVENTOS
 
 @app.put("/eventos/{evento_id}", response_model=schemas.EventoLPRResponse)
 def atualizar_evento(evento_id: int, dados: schemas.EventoUpdate, db: Session = Depends(get_db)):
@@ -263,12 +278,7 @@ def obter_detalhes_evento(evento_id: int, db: Session = Depends(get_db)):
 
 @app.get("/admin/sincronizar-antigos")
 def sincronizar_registros_antigos(db: Session = Depends(get_db)):
-    """
-    Varre o banco de dados procurando eventos sem Ticket e tenta buscar na Sinobras
-    usando a data original do evento.
-    """
     print("Iniciando sincronização de legado...")
-    
     eventos_pendentes = db.query(models.EventoVMS).filter(
         (models.EventoVMS.origem_dado != "SINOBRAS_API") | 
         (models.EventoVMS.ticket_id == "0")
@@ -285,7 +295,6 @@ def sincronizar_registros_antigos(db: Session = Depends(get_db)):
                 data_registro = evento.timestamp_registro.strftime("%Y-%m-%d")
             
             dados_api = sinobras.consultar_truck_arrival(evento.placa_veiculo, data_iso=data_registro)
-            
             if dados_api:
                 evento.ticket_id = str(dados_api.get('ticket', '0'))
                 evento.status_ticket = dados_api.get('status', 'Classificado')
@@ -294,28 +303,13 @@ def sincronizar_registros_antigos(db: Session = Depends(get_db)):
                 evento.nota_fiscal = dados_api.get('notaFiscal', '')
                 evento.tipo_veiculo = dados_api.get('tipoVeiculo', '')
                 evento.peso_balanca = float(dados_api.get('pesagemInicial', 0.0))
-                
                 evento.origem_dado = "SINOBRAS_API (Retroativo)"
-                
-                print(f"Evento {evento.id} ({evento.placa_veiculo}) atualizado com Ticket {evento.ticket_id}")
                 atualizados += 1
-            else:
-                print(f"Evento {evento.id}: Placa {evento.placa_veiculo} não encontrada na data {data_registro}")
-                
         except Exception as e:
-            print(f"Erro ao processar evento {evento.id}: {e}")
             erros += 1
             continue
-
     db.commit()
-    
-    return {
-        "status": "Finalizado",
-        "total_analisado": len(eventos_pendentes),
-        "atualizados_sucesso": atualizados,
-        "falhas": erros
-    }
-
+    return {"status": "Finalizado", "atualizados": atualizados, "erros": erros}
 
 @app.post("/eventos/{evento_id}/upload-avaria")
 def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -344,61 +338,50 @@ def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session
 
     db.commit()
     db.refresh(evento)
-
     return {"status": "Sucesso", "url": url_relativa, "lista_atual": evento.fotos_avaria}
 
-
-# Rotas das Garras 
-
-def get_garras_config():
-    ips = os.getenv("GARRAS_IPS", "").split(",")
-    user = os.getenv("GARRAS_USER", "admin")
-    password = os.getenv("GARRAS_PASS", "")
-
-    garras = []
-    for idx, ip in enumerate(ips):
-        if ip.strip():
-            garras.append({
-                "id": idx,
-                "nome": f"Garra {idx + 1}",
-                "ip": ip.strip(),
-                "user": user,
-                "password": password
-            })
-    return garras
+# ROTAS DAS GARRAS
 
 @app.get("/config/garras")
-def listar_garras():
+def listar_garras_endpoint():
     configs = get_garras_config()
     return [{"id": g["id"], "nome": g["nome"]} for g in configs]
 
 @app.get("/proxy/snapshot/garra/{garra_id}")
 def proxy_snapshot_garra_id(garra_id: int):
-    import requests
-    from requests.auth import HTTPDigestAuth
-
-    garras = get_camera_config()
+    """
+    Proxy para visualização ao vivo.
+    CORREÇÃO: Usa get_garras_config() para ler do .env em vez de consultar o banco.
+    """
+    garras = get_garras_config()  
+    
     if garra_id < 0 or garra_id >= len(garras):
         return Response(status_code=404)
 
     cam = garras[garra_id]
-
     url = f"http://{cam['ip']}/cgi-bin/snapshot.cgi"
 
     try:
         resp = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), timeout=2)
         if resp.status_code == 200:
-            return Response(content=resp.content, media_type="image/jpg")
+            return Response(content=resp.content, media_type="image/jpeg")
+        else:
+            return Response(status_code=resp.status_code)
     except Exception as e:
         print(f"Erro proxy garra {garra_id}: {e}")
-    return Response(status_code=500)
+        return Response(status_code=503)
 
 class GarraCaptureRequest(BaseModel):
     garra_id: int
 
 @app.post("/eventos/{evento_id}/captura-remota")
 def captura_snapshot_garra(evento_id: int, dados: GarraCaptureRequest, db: Session = Depends(get_db)):
-    garras = get_camera_config()
+    """
+    Captura imagem da garra e salva no ticket.
+    CORREÇÃO: Usa get_garras_config() para pegar credenciais.
+    """
+    garras = get_garras_config() 
+    
     if dados.garra_id < 0 or dados.garra_id >= len(garras):
         raise HTTPException(status_code=404, detail="Garra não encontrada")
 
@@ -440,9 +423,16 @@ def remover_foto_avaria(evento_id: int, dados: FotoDeleteRequest, db: Session = 
 
     if url_limpa in lista_urls:
         lista_urls.remove(url_limpa)
+        
+        try:
+            path_part = url_limpa.replace("/imagens/", "")
+            full_path = os.path.join(static_dir, path_part)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        except Exception:
+            pass
 
     evento.fotos_avaria = ",".join(lista_urls) if lista_urls else None
     db.commit()
 
     return {"status": "Foto removida"}
-
