@@ -42,8 +42,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <NavItem 
                 icon={<History size={20}/>} 
                 label="Histórico" 
-                active={location.pathname.includes('/historico')}
-                onClick={() => navigate('/historico')}   
+                active={location.pathname.includes('/history')}
+                onClick={() => navigate('/history')}   
             />
 
             <NavItem 
@@ -56,8 +56,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <NavItem 
                 icon={<Settings size={20}/>} 
                 label="Configurações" 
-                active={location.pathname.includes('/config')}
-                onClick={() => navigate('/config')}   
+                active={location.pathname.includes('/settings')}
+                onClick={() => navigate('/settings')}   
             />
         </nav>
 
