@@ -92,7 +92,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             
             <div className="flex items-center gap-4">
                 <span className="hidden md:inline-block text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full border border-green-200 animate-pulse">
-                    ● Online
+                    ● Sistema Online
                 </span>
                 <button 
                     onClick={toggleTheme}
