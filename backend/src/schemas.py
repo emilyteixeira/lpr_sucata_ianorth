@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Union
 
 class CameraConfigSchema(BaseModel):
     ip_address: str
@@ -8,7 +8,7 @@ class CameraConfigSchema(BaseModel):
     is_active: bool
 
 class EventoUpdate(BaseModel):
-    ticket_id: Optional[int] = None
+    ticket_id: Optional[Union[str, int]] = None
     status_ticket: Optional[str] = None
     motorista: Optional[str] = None
     fornecedor_nome: Optional[str] = None
@@ -32,7 +32,7 @@ class EventoUpdate(BaseModel):
 
 class EventoLPRResponse(BaseModel):
     id: int
-    ticket_id: Optional[str] = None
+    ticket_id: Optional[Union[str, int]] = None
     placa_veiculo: str
     timestamp_registro: str
     camera_nome: str
