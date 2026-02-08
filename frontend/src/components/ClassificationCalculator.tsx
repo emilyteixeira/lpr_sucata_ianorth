@@ -5,7 +5,7 @@ import type { EventoLPR } from '../types';
 import { API_BASE_URL } from '../config';
 
 const DENSITY_RANGES: Record<string, [number, number]> = {
-  "SUCATA MISTA": [0.2, 0.4],
+  "SUCATA MISTA": [0.2, 0.6],
   "SUCATA MIÚDA": [0.5, 1.5],
   "SUCATA PESADA": [0.5, 1.6],
   "SUCATA GRAÚDA DE CORTE": [0.6, 1.7],
@@ -36,12 +36,29 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
     const [saving, setSaving] = useState(false);
     const [materiais, setMateriais] = useState<MaterialItem[]>([]);
 
+    useEffect(() => {
+        if (ticket?.tipo_sucata && materiais.length === 0) {
+            if (ticket.tipo_sucata.includes('=')) {
+                const itens = ticket.tipo_sucata.split(';').map(s => {
+                    const [tipo, val] = s.split('=');
+                    return { tipo: tipo?.trim(), pct: Number(val) || 0 };
+                });
+                setMateriais(itens);
+            } else {
+                setMateriais([{ tipo: ticket.tipo_sucata, pct: 100 }]);
+            }
+        } else if (materiais.length === 0) {
+            setMateriais([]); 
+        }
+    }, [ticket]);
+
     useEffect(() =>{
         if (materiais.length > 0){
             const stringSalva = materiais.map(m => `${m.tipo}=${m.pct}`).join(';');
             setFormData(prev => ({...prev, tipo_sucata: stringSalva}));
         }
     }, [materiais, setFormData]);
+
     const addMaterial = () => {
         setMateriais([...materiais, {tipo: "", pct: 0 }]);
     };
@@ -87,13 +104,13 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
             totalPct += m.pct;
         }
     });
-
     
     let statusDensidade = "Aguardando dados";
     let statusColor = "text-slate-400";
     let statusBg = "bg-slate-100 dark:bg-slate-700";
     
-    if (totalPct && volumeM3 > 0 && materiais.length > 0) {
+    if (totalPct > 0 && volumeM3 > 0 && materiais.length > 0) {
+        // Normaliza para 100% caso o usuário digite menos
         const fator = totalPct === 100 ? 1 : (100 / totalPct);
         const minFinal = minIdeal * fator;
         const maxFinal = maxIdeal * fator;
@@ -126,7 +143,6 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                     dim_altura: alt,
                     impureza_porcentagem: impurezaPct,
                     tipo_sucata: formData.tipo_sucata,
-                    // Campos calculados também podem ser salvos se o backend esperar
                 })
             });
             alert("Classificação salva com sucesso!");
@@ -136,7 +152,8 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
             setSaving(false);
         }
     };
-return (
+
+    return (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mt-6">
             <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                 <h3 className="font-bold flex items-center gap-2 dark:text-white text-lg">
@@ -153,12 +170,10 @@ return (
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
                 
-                {/* SELEÇÃO DE MATERIAIS (Múltiplos)  */}
+                {/* SELEÇÃO DE MATERIAIS */}
                 <div className="md:col-span-4 space-y-3 border-r border-slate-100 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                            Composição da Carga
-                        </h4>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">Composição da Carga</h4>
                         <button onClick={addMaterial} className="text-xs flex items-center gap-1 text-blue-600 font-bold hover:underline">
                             <Plus size={12}/> Adicionar Tipo
                         </button>
@@ -176,11 +191,8 @@ return (
                                     {Object.keys(DENSITY_RANGES).map(k => <option key={k} value={k}>{k}</option>)}
                                 </select>
                                 <div className="flex items-center gap-1 w-16">
-                                    <input 
-                                        type="number" 
-                                        className="w-full bg-white dark:bg-slate-800 border rounded px-1 text-center text-xs font-bold"
-                                        placeholder="%"
-                                        value={item.pct || ''}
+                                    <input type="number" className="w-full bg-white dark:bg-slate-800 border rounded px-1 text-center text-xs font-bold"
+                                        placeholder="%" value={item.pct || ''}
                                         onChange={(e) => updateMaterial(idx, 'pct', Number(e.target.value))}
                                     />
                                     <span className="text-[10px] text-slate-400">%</span>
@@ -188,24 +200,12 @@ return (
                                 <button onClick={() => removeMaterial(idx)} className="text-red-400 hover:text-red-600"><Trash2 size={14}/></button>
                             </div>
                         ))}
-                        {materiais.length === 0 && (
-                            <div className="text-center py-4 text-xs text-slate-400 border border-dashed rounded">
-                                Nenhum material selecionado
-                            </div>
-                        )}
                     </div>
-                    
-                    {/* Alerta se a soma não for 100% */}
-                    {totalPct !== 100 && totalPct > 0 && (
-                        <div className="text-[10px] text-orange-500 flex items-center gap-1">
-                            <Info size={12}/> Soma atual: {totalPct}% (O ideal é 100%)
-                        </div>
-                    )}
+                    {totalPct !== 100 && totalPct > 0 && <div className="text-[10px] text-orange-500">Soma atual: {totalPct}%</div>}
                 </div>
 
-                {/* Tara, Dimensões  */}
+                {/* PESOS E DIMENSÕES */}
                 <div className="md:col-span-5 grid grid-cols-2 gap-6 border-r border-slate-100 dark:border-slate-700 pr-4">
-                    {/* Pesos */}
                     <div className="space-y-3">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Scale size={12}/> Pesagem</h4>
                         <div className="flex justify-between items-baseline">
@@ -214,7 +214,7 @@ return (
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-xs text-slate-500 font-bold">Tara (kg)</span>
-                            <input type="number" className="w-20 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded px-2 py-1 text-right font-mono font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-yellow-500 outline-none"
+                            <input type="number" className="w-20 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded px-2 py-1 text-right font-mono font-bold text-slate-700 dark:text-white outline-none"
                                 value={formData.peso_tara || ''} onChange={e=>setFormData({...formData, peso_tara: Number(e.target.value)})}/>
                         </div>
                         <div className="pt-2 border-t flex justify-between items-center">
@@ -223,14 +223,13 @@ return (
                         </div>
                     </div>
 
-                    {/* Dimensões */}
                     <div className="space-y-3">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Box size={12}/> Cubagem (m)</h4>
                         <div className="grid grid-cols-3 gap-1">
                             {['comprimento', 'largura', 'altura'].map((f) => (
                                 <div key={f}>
                                     <input type="number" placeholder={f.substr(0,1).toUpperCase()} 
-                                        className="w-full bg-slate-50 dark:bg-slate-900 border rounded px-1 py-1 text-center font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border rounded px-1 py-1 text-center font-mono text-xs outline-none"
                                         value={formData[`dim_${f}` as keyof EventoLPR] || ''} 
                                         onChange={e=>setFormData({...formData, [`dim_${f}`]: Number(e.target.value)})}/>
                                 </div>
@@ -243,23 +242,17 @@ return (
                     </div>
                 </div>
 
-                {/* Densidade e Desconto */}
+                {/* RESULTADOS E IMPUREZA */}
                 <div className="md:col-span-3 space-y-4 flex flex-col justify-between">
-                    
-                    {/* Densidade */}
                     <div className="text-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Densidade Real</span>
-                        <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-3xl font-mono font-bold text-slate-800 dark:text-white">{densidade.toFixed(3)}</span>
-                            <span className="text-xs text-slate-500">t/m³</span>
-                        </div>
+                        <span className="text-3xl font-mono font-bold text-slate-800 dark:text-white">{densidade.toFixed(3)}</span>
                         <div className={`mt-1 text-[10px] font-bold px-2 py-1 rounded border inline-flex items-center gap-1 ${statusBg} ${statusColor}`}>
-                            {statusDensidade.includes("OK") ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
+                            {statusDensidade.includes("OK") || statusDensidade.includes("NA FAIXA") ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
                             {statusDensidade}
                         </div>
                     </div>
 
-                    {/* Impureza */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-bold text-red-500 uppercase"><Percent size={10} className="inline"/> Impureza</span>
@@ -274,7 +267,6 @@ return (
                         </div>
                     </div>
 
-                    {/* Peso Final */}
                     <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded border border-green-200 dark:border-green-800 text-center">
                         <span className="text-[10px] font-bold text-green-800 dark:text-green-500 uppercase block">A Pagar</span>
                         <span className="text-xl font-mono font-bold text-green-900 dark:text-green-300">{pesoFinal.toLocaleString()} <span className="text-xs">kg</span></span>
