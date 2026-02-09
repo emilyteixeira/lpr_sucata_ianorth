@@ -3,6 +3,7 @@ export interface EventoLPR {
     timestamp_registro: string;
     placa_veiculo: string;
     camera_nome?: string;
+    origem_dado?: string;
     
     ticket_id?: number;
     status_ticket?: string;

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    ArrowLeft, Printer, Truck, Scale, MapPin, Calendar, 
-    Camera, PlayCircle, Edit3, Save, X, Trash2, Aperture, 
-    Monitor, Upload, ChevronDown, ChevronUp, Clock 
+    ArrowLeft, Printer, Truck, Scale, Camera, PlayCircle, Trash2,  
+    Monitor, Upload, Clock, FileText, User
 } from 'lucide-react';
+
 import type { EventoLPR } from '../types';
 import { API_BASE_URL, getMediaUrl } from '../config'; 
 import { ClassificationCalculator } from '../components/ClassificationCalculator';
@@ -18,9 +18,9 @@ export function TicketDetails() {
   
   const [ticket, setTicket] = useState<EventoLPR | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+
   const [formData, setFormData] = useState<Partial<EventoLPR>>({});
-  const [saving, setSaving] = useState(false);
+
   const [uploading, setUploading] = useState(false);
   const [mediaModal, setMediaModal] = useState<{url: string, type: 'image' | 'video'} | null>(null);
 
@@ -51,35 +51,13 @@ export function TicketDetails() {
   const carregarDados = () => {
     fetch(`${API_BASE_URL}/eventos/${id}`)
       .then(res => res.json())
-      .then(data => { setTicket(data); setFormData(data); setLoading(false); })
+      .then(data => { 
+                setTicket(data);
+                setFormData(data);
+                setLoading(false); 
+            })
       .catch(err => console.error(err));
   }
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-        const res = await fetch(`${API_BASE_URL}/eventos/${id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                ...formData,
-                ticket_id: Number(formData.ticket_id),
-                observacao: formData.observacao,
-                peso_tara: Number(formData.peso_tara),
-                dim_comprimento: Number(formData.dim_comprimento),
-                dim_largura: Number(formData.dim_largura),
-                dim_altura: Number(formData.dim_altura),
-                impureza_porcentagem: Number(formData.impureza_porcentagem),
-                tipo_sucata: formData.tipo_sucata
-            })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            setTicket(data); setFormData(data); setIsEditing(false);
-            alert("Salvo com sucesso!");
-        } else alert("Erro ao salvar.");
-    } catch (e) { alert("Erro de conexão."); } finally { setSaving(false); }
-  };
 
   const handleCapturaGarra = async () => {
       if (cameraAtivaId === null) return;
@@ -94,6 +72,7 @@ export function TicketDetails() {
           else alert("Falha na captura.");
       } catch (e) { alert("Erro."); } finally { setCapturando(false); }
   };
+
 
   const handleUploadManual = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files?.length) return;
@@ -136,214 +115,232 @@ export function TicketDetails() {
   const pesoLiquido = Math.max(0, pesoBruto - pesoTara);
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="space-y-6 pb-20 animate-fade-in font-sans">
       
       {mediaModal && <MediaModal url={mediaModal.url} type={mediaModal.type} onClose={() => setMediaModal(null)} />}
 
       {/* HEADER DE AÇÕES */}
       <div className="flex justify-between items-center no-print">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors font-medium">
           <ArrowLeft size={20} /> DashBoard
         </button>
-        <div className="flex gap-3">
-            {!isEditing ? (
-                <>
-                    <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded font-medium hover:bg-slate-300"><Printer size={18} /> Imprimir Relatório</button>
-                    <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-500 shadow-lg"><Edit3 size={18} /> Editar Dados</button>
-                </>
-            ) : (
-                <>
-                    <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded font-medium hover:bg-red-100"><X size={18} /> Cancelar</button>
-                    <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-500 shadow-lg">{saving ? '...' : <><Save size={18} /> Salvar</>}</button>
-                </>
-            )}
+                <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded font-medium hover:bg-slate-300"><Printer size={18} /> Imprimir Relatório
+                </button>
         </div>
-      </div>
 
       {/* CABEÇALHO TICKET */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center shadow-sm">
-        <div>
-            <div className="flex items-center gap-3">
-                <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded uppercase">Entrada</span>
-                <span className="text-sm text-slate-400 font-mono">{ticket.camera_nome}</span>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        
+        {/* Linha Superior: ID e Status */}
+        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div className="flex items-center gap-3 mb-1">
+                    <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Entrada {ticket.origem_dado || 'LPR'}</span>
+                    <span className="text-sm text-slate-400 font-mono flex items-center gap-1"><Clock size={12}/> {ticket.timestamp_registro}</span>
+                </div>
+                <div className="flex items-baseline gap-3">
+                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Ticket #{ticket.ticket_id}</h1>
+                    <span className="text-slate-400 text-sm hidden md:inline">|</span>
+                    <span className="text-slate-500 text-sm font-medium">{ticket.camera_nome}</span>
+                </div>
             </div>
-            <h1 className="text-3xl font-bold mt-1 dark:text-white">Ticket #{ticket.ticket_id}</h1>
-            <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-                <Clock size={14}/> Reg. Interno: {ticket.timestamp_registro}
-            </p>
+            
+            <div className={`px-5 py-2 rounded-full border text-center flex items-center gap-2 ${ticket.status_ticket?.toLowerCase().includes('final') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                <span className="block text-[10px] uppercase font-bold opacity-70">Status:</span>
+                <span className="text-lg font-bold tracking-tight">{ticket.status_ticket}</span>
+            </div>
         </div>
-        <div className={`px-4 py-2 rounded border text-center ${ticket.status_ticket==='Finalizado'?'bg-green-50 text-green-700 border-green-200':'bg-blue-50 text-blue-700 border-blue-200'}`}>
-            <span className="block text-xs uppercase font-bold opacity-70">Status Sinobras</span>
-            <span className="text-xl font-bold">{ticket.status_ticket}</span>
+
+        {/* Linha Inferior: Dados do Transporte em Grid Horizontal */}
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-5">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
+                
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1"><Truck size={10}/> Veículo</span>
+                    <div className="font-bold text-slate-800 dark:text-white text-lg">{ticket.placa_veiculo}</div>
+                    <span className="text-xs text-slate-500">{ticket.tipo_veiculo || 'Caminhão'} - {ticket.uf_veiculo || 'UF'}</span>
+                </div>
+
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1"><User size={10}/> Motorista</span>
+                    <div className="font-bold text-slate-800 dark:text-white truncate" title={ticket.motorista}>{ticket.motorista || 'Não identificado'}</div>
+                    <span className="text-xs text-slate-500">CPF: ---</span>
+                </div>
+
+                <div className="flex flex-col md:col-span-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">Fornecedor / Produto</span>
+                    <div className="font-bold text-slate-800 dark:text-white truncate" title={ticket.fornecedor_nome}>{ticket.fornecedor_nome || 'Fornecedor Desconhecido'}</div>
+                    <div className="text-xs text-slate-500 truncate">{ticket.produto_declarado}</div>
+                </div>
+
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1"><FileText size={10}/> Documentação</span>
+                    <div className="font-bold text-slate-800 dark:text-white">NF: {ticket.nota_fiscal || '---'}</div>
+                    <span className="text-xs text-slate-500">Peso NF: {ticket.peso_nf?.toLocaleString()} kg</span>
+                </div>
+
+            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* DADOS COMPLETOS */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 h-full shadow-sm">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Truck size={18} className="text-blue-500"/> Dados do Transporte
-            </h3>
-            <div className="space-y-3">
-                <InfoRow label="Placa" value={ticket.placa_veiculo} highlight />
-                <InfoRow label="UF" value={ticket.uf_veiculo} />
-                <InfoRow label="Tipo Veículo" value={ticket.tipo_veiculo} />
-                <InfoRow label="Motorista" value={ticket.motorista} />
-                <div className="border-t border-slate-100 dark:border-slate-700 pt-2 mt-2"></div>
-                <InfoRow label="Fornecedor" value={ticket.fornecedor_nome} />
-                <InfoRow label="Produto" value={ticket.produto_declarado} />
-                <InfoRow label="Nota Fiscal" value={ticket.nota_fiscal} />
-                <InfoRow label="Entrada " value={ticket.data_entrada_sinobras} />
-            </div>
-          </div>
-        </div>
 
-        {/* AUDITORIA DE PESO */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 h-full shadow-sm">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Scale size={18} className="text-blue-500"/> Auditoria de Peso
+            {/* AUDITORIA E MÍDIA */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        {/* Peso */}
+        <div className="md:col-span-3 flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex-1">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+              <Scale size={16} className="text-blue-600"/> Auditoria de Peso
             </h3>
-            <div className="space-y-4">
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded border border-slate-100 dark:border-slate-700">
-                    <span className="text-xs text-slate-500 block uppercase font-bold mb-1">Peso Bruto (agi)</span>
-                    <span className="text-3xl font-mono font-bold dark:text-white text-slate-800">
-                        {pesoBruto.toLocaleString()} <span className="text-sm font-sans text-slate-400">kg</span>
+            
+            <div className="space-y-6 mt-4">
+                <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30 text-center">
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 block uppercase font-bold mb-1">Peso Bruto (Entrada)</span>
+                    <span className="text-3xl font-mono font-extrabold text-blue-900 dark:text-white tracking-tight">
+                        {pesoBruto.toLocaleString()} <span className="text-sm font-sans text-blue-400">kg</span>
                     </span>
                 </div>
                 
                 <div className="flex justify-between items-center px-2 py-2 border-b border-slate-100 dark:border-slate-700">
-                    <span className="text-sm text-slate-500">Tara (carreta)</span>
-                    <span className="font-mono text-slate-700 dark:text-slate-300 font-bold">{pesoTara.toLocaleString()} kg</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase">Tara</span>
+                    <span className="font-mono text-lg font-bold text-slate-700 dark:text-slate-300">{pesoTara.toLocaleString()} <span className="text-xs font-normal">kg</span></span>
                 </div>
                 
-                <div className="pt-2 flex justify-between items-center px-2 bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-100 dark:border-green-800">
-                    <span className="text-sm font-bold text-green-600 uppercase">Peso Líquido</span>
-                    <span className="font-mono text-xl font-bold text-green-700 dark:text-green-400">{pesoLiquido.toLocaleString()} kg</span>
+                <div>
+                    <span className="text-[10px] font-bold text-green-600 uppercase block mb-1">Peso Líquido Calculado</span>
+                    <div className="text-2xl font-mono font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg border border-green-100 dark:border-green-800">
+                        {pesoLiquido.toLocaleString()} kg
+                    </div>
                 </div>
             </div>
           </div>
         </div>
 
-        {/* MÍDIA DA ENTRADA */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Camera size={18} className="text-blue-500"/> Registro Visual da Entrada
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
+        {/* Mídia LPR */}
+        <div className="md:col-span-9">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm h-full">
+             <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+               <Camera size={16} className="text-blue-600"/> Registro Visual da Entrada
+             </h3>
+             
+             {/* Layout lado a lado agora que temos mais espaço (9 colunas) */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px]">
+                
+                {/* Vídeo */}
                 <div 
-                    className="aspect-video bg-black rounded flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 group relative"
-                    onClick={() => ticket.snapshot_url && setMediaModal({url: ticket.snapshot_url, type: 'image'})}
-                >
-                    {ticket.snapshot_url ? (
-                        <>
-                            <img src={getMediaUrl(ticket.snapshot_url)} className="w-full h-full object-contain" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
-                                <Camera className="text-white drop-shadow-md" size={24}/>
-                            </div>
-                        </>
-                    ) : <span className="text-xs text-slate-500">Sem foto</span>}
-                </div>
-                <div 
-                    className="aspect-video bg-black rounded flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 group relative"
+                    className="h-full bg-black rounded-lg overflow-hidden relative group cursor-pointer shadow-md border border-slate-800"
                     onClick={() => ticket.video_url && setMediaModal({url: ticket.video_url, type: 'video'})}
                 >
                     {ticket.video_url ? (
                         <>
-                            <video className="w-full h-full object-contain pointer-events-none"><source src={getMediaUrl(ticket.video_url)} type="video/mp4"/></video>
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
-                                <PlayCircle className="text-white drop-shadow-md" size={32}/>
+                            <video className="w-full h-full object-contain opacity-90 group-hover:opacity-100 transition"><source src={getMediaUrl(ticket.video_url)} type="video/mp4"/></video>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full group-hover:bg-white/30 transition shadow-lg">
+                                    <PlayCircle className="text-white" size={40}/>
+                                </div>
                             </div>
+                            <span className="absolute top-3 left-3 text-[10px] font-bold text-white bg-red-600 px-2 py-0.5 rounded shadow-sm">VÍDEO DA PASSAGEM</span>
                         </>
-                    ) : <span className="text-xs text-slate-500">Sem vídeo</span>}
+                    ) : <div className="h-full flex items-center justify-center text-slate-500 text-xs font-mono">VÍDEO NÃO DISPONÍVEL</div>}
                 </div>
-            </div>
+
+                {/* Foto */}
+                <div 
+                    className="h-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-slate-700"
+                    onClick={() => ticket.snapshot_url && setMediaModal({url: ticket.snapshot_url, type: 'image'})}
+                >
+                    {ticket.snapshot_url ? (
+                        <>
+                            <img src={getMediaUrl(ticket.snapshot_url)} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
+                                <Camera className="text-white opacity-0 group-hover:opacity-100 transition drop-shadow-md" size={32}/>
+                            </div>
+                            <span className="absolute top-3 left-3 text-[10px] font-bold text-slate-700 bg-white/90 px-2 py-0.5 rounded shadow-sm border">FOTO LPR</span>
+                        </>
+                    ) : <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">FOTO NÃO DISPONÍVEL</div>}
+                </div>
+
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* MONITOR GARRAS */}
+    {/* CALCULADORA */}
+      <ClassificationCalculator formData={formData} setFormData={setFormData} ticket={ticket} />
+
+    {/* MONITOR DE GARRAS */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Edit3 size={18} className="text-orange-500"/> Monitoramento de Classificação
+        <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+            <Monitor size={16} className="text-orange-500"/> Monitoramento de Classificação (Descarga)
         </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Observações do classificador</label>
-                {isEditing ? (
-                    <textarea className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 h-48 focus:ring-2 outline-none text-slate-700 dark:text-slate-200 resize-none"
-                        value={formData.observacao || ''} onChange={e => setFormData({...formData, observacao: e.target.value})} placeholder="Registre observações..."/>
-                ) : (
-                    <div className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg p-3 h-48 overflow-y-auto text-slate-600 italic">
-                        {ticket?.observacao || 'Descreva impurezas, objetos estranhos, etc...'}
-                    </div>
-                )}
-            </div>
-            
-            <div className="lg:col-span-2 flex flex-col gap-4">
-                {/* Câmera */}
-                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
-                     <div className="flex gap-2 overflow-x-auto">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Controles */}
+            <div className="space-y-4">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-3 block">Selecionar a Garra</label>
+                    <div className="flex flex-wrap gap-2">
                         {listaGarras.length > 0 ? listaGarras.map((cam) => (
                             <button key={cam.id} onClick={() => setCameraAtivaId(cameraAtivaId === cam.id ? null : cam.id)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold border flex items-center gap-2 ${cameraAtivaId === cam.id ? 'bg-red-600 text-white border-red-700' : 'bg-white dark:bg-slate-700 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                <Monitor size={16}/> {cam.nome} {cameraAtivaId === cam.id ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                                className={`flex-1 px-3 py-2 rounded text-xs font-bold border transition-all ${cameraAtivaId === cam.id ? 'bg-red-600 text-white border-red-700 shadow-md transform scale-105' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-100'}`}>
+                                {cam.nome}
                             </button>
-                        )) : <span className="text-xs text-slate-400 px-2">Sem garras.</span>}
+                        )) : <span className="text-xs text-slate-400">Nenhuma garra configurada no sistema.</span>}
                     </div>
-                    <label className="cursor-pointer flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-500 px-2 border-l ml-2 pl-4">
-                        <Upload size={14}/> Upload Manual <input type="file" className="hidden" onChange={handleUploadManual} disabled={uploading} />
-                    </label>
                 </div>
 
-                {/* Vídeo */}
-                {cameraAtivaId !== null && (
-                    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-slate-800 shadow-lg">
-                        {previewUrl ? <img src={previewUrl} className="w-full h-full object-contain" alt="Live" /> : <div className="text-white animate-pulse text-xs">Conectando...</div>}
-                        <button onClick={handleCapturaGarra} disabled={capturando} className="absolute bottom-4 bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2">
-                            {capturando ? '...' : <><Camera size={15} /> CAPTURAR</>}
+                <div>
+                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Observações do Classificador</label>
+                     <div className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 h-24 overflow-y-auto text-sm text-slate-600 dark:text-slate-300 italic">
+                        {ticket?.observacao || 'Nenhuma observação registrada.'}
+                     </div>
+                </div>
+            </div>
+
+            {/* Monitor */}
+            <div className="lg:col-span-2 space-y-4">
+                {cameraAtivaId !== null ? (
+                    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center border-2 border-slate-800 shadow-xl group">
+                        {previewUrl ? <img src={previewUrl} className="w-full h-full object-contain" alt="Ao Vivo" /> : <div className="text-white animate-pulse text-xs">Conectando ao stream...</div>}
+                        <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded animate-pulse flex items-center gap-1"><span className="w-2 h-2 bg-white rounded-full"></span> AO VIVO</div>
+                        
+                        <button onClick={handleCapturaGarra} disabled={capturando} 
+                            className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
+                            {capturando ? 'Salvando...' : <><Camera size={18} className="text-red-600"/> Capturar Foto</>}
                         </button>
                     </div>
-                )}
-
-                {/* Galeria de Evidências */}
-                <div className="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    <div className="flex items-center gap-2 mb-2"><Camera size={14} className="text-slate-400"/><span className="text-xs font-bold text-slate-500">EVIDÊNCIAS COLETADAS ({listaFotos.length})</span></div>
-                    <div className="grid grid-cols-6 gap-2">
-                        {listaFotos.length > 0 ? listaFotos.map((url, idx) => (
-                            <div 
-                                key={idx} 
-                                className="relative group aspect-square bg-slate-200 rounded overflow-hidden cursor-pointer hover:ring-2 ring-blue-500 transition" 
-                                onClick={() => setMediaModal({url, type: 'image'})}
-                            >
-                                <img src={getMediaUrl(url)} className="w-full h-full object-cover"/>
-                                <button 
-                                    onClick={(e) => handleDeleteFoto(url, e)} 
-                                    className="absolute top-0 right-0 bg-red-600 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Excluir"
-                                >
-                                    <Trash2 size={12}/>
-                                </button>
-                            </div>
-                        )) : <span className="col-span-6 text-center text-xs text-slate-400 py-2">Nenhuma impureza registrada.</span>}
+                ) : (
+                    <div className="w-full h-full min-h-[250px] bg-slate-100 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 gap-2">
+                        <Monitor size={40} className="opacity-50"/>
+                        <span className="text-sm font-medium">Selecione uma garra para visualizar</span>
                     </div>
-                </div>
+                )}
+                
+                {/* Galeria */}
+                {listaFotos.length > 0 && (
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><Camera size={12}/> Evidências coletadas ({listaFotos.length})</span>
+                            <label className="cursor-pointer text-[10px] font-bold text-blue-600 hover:text-blue-500 flex items-center gap-1">
+                                <Upload size={10}/> Upload Manual <input type="file" className="hidden" onChange={handleUploadManual} disabled={uploading} />
+                            </label>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                            {listaFotos.map((url, idx) => (
+                                <div key={idx} className="relative group w-20 h-20 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-blue-500 transition border border-slate-200" onClick={() => setMediaModal({url, type: 'image'})}>
+                                    <img src={getMediaUrl(url)} className="w-full h-full object-cover"/>
+                                    <button onClick={(e) => handleDeleteFoto(url, e)} className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-all shadow-sm"><Trash2 size={10}/></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
       </div>
 
-      {/* CALCULADORA */}
-      <ClassificationCalculator formData={formData} setFormData={setFormData} ticket={ticket} />
     </div>
   );
 }
 
-function InfoRow({ label, value, highlight }: any) {
-    return (
-        <div className="flex justify-between items-center border-b border-slate-50 dark:border-slate-700/50 pb-2 h-10">
-            <span className="text-sm text-slate-500 w-1/3">{label}</span>
-            <span className={`font-medium text-right w-2/3 truncate ${highlight ? 'text-lg font-mono font-bold bg-slate-100 dark:bg-slate-900 px-2 rounded' : 'text-slate-700 dark:text-slate-200'}`}>{value || '---'}</span>
-        </div>
-    )
-}
