@@ -100,7 +100,6 @@ export function History() {
                     </div>
 
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-3 text-slate-400" size={20} />
                         <input 
                             type="date" 
                             className="w-full px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white custom-date-input"

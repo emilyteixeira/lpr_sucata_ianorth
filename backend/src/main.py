@@ -4,16 +4,19 @@ import shutil
 import requests
 from requests.auth import HTTPDigestAuth
 
+from fastapi.responses import StreamingResponse, Response
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Response 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, desc
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional, Union
 
 from src import models, database, schemas
 from src.services import sinobras
@@ -25,16 +28,56 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-monitor = None
 MODO_DESENVOLVIMENTO = os.getenv("MODO_DESENVOLVIMENTO", "False").lower() == "true"
+STATIC_DIR = os.path.join("src", "static")
+
+ultimas_placas_lidas = {}
+
+os.makedirs(os.path.join(STATIC_DIR, "snapshots"), exist_ok=True)
 
 models.Base.metadata.create_all(bind=database.engine)
+
+monitor = None
+
 
 
 def get_db():
     db = database.SessionLocal()
     try: yield db
     finally: db.close()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Iniciando Listener LPR Intelbras...")
+    global monitor
+    try:
+        monitor = IntelbrasLPRListener()
+        monitor.start()
+        print("Listener LPR Ativo e monitoramento...")
+    except Exception as e:
+        print(f"Erro ao iniciar Listener LPR: {e}")
+    
+    yield
+    print("Parando Serviços...")
+    if monitor: 
+        monitor.stop()
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+app.mount("/imagens", StaticFiles(directory=STATIC_DIR), name="imagens")
+
+@app.get("/")
+def read_root():
+    return {"status": "Sistema LPR IANorth Online"}
+
 
 def get_garras_config():
     """Lê configuração das garras do arquivo .env (não usa banco de dados)"""
@@ -56,10 +99,22 @@ def get_garras_config():
 
 def processar_evento_camera(placa: str, origem: str):
     print(f"Nova placa detectada: {placa}")
+
+    global ultimas_placas_lidas
     
-    timestamp_obj = datetime.now()
-    timestamp_str = timestamp_obj.strftime("%Y-%m-%d %H:%M:%S")
-    timestamp_file = timestamp_obj.strftime("%Y%m%d_%H%M%S")
+    agora = datetime.now()
+
+    if placa in ultimas_placas_lidas:
+        tempo_passado = (agora - ultimas_placas_lidas[placa]).total_seconds()
+        if tempo_passado < 300:
+            print(f"Ignorando placa repetida {placa} (Lida há {tempo_passado:.0f}s)")
+
+        ultimas_placas_lidas[placa] = agora
+
+        print(f"Nova placa detectada e aprovada para processamento: {placa}")
+
+    timestamp_str = agora.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp_file = agora.strftime("%Y%m%d_%H%M%S")
     
     db = database.SessionLocal()
     config = db.query(models.CameraConfig).first()
@@ -194,31 +249,6 @@ def reload_camera_service():
     else:
         print(" Aguardando configuração de câmera...")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    static_dir = os.path.join(base_dir, "static")
-    os.makedirs(os.path.join(static_dir, "snapshots"), exist_ok=True)
-    os.makedirs(os.path.join(static_dir, "videos"), exist_ok=True)
-    
-    reload_camera_service()
-    yield
-    if monitor: monitor.stop()
-
-
-app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.join(base_dir, "static")
-app.mount("/imagens", StaticFiles(directory=static_dir), name="static")
 
 # ROTAS DA CÂMERA LPR - BANCO DE DADOS
 
@@ -295,9 +325,6 @@ def atualizar_evento(evento_id: int, dados: schemas.EventoUpdate, db: Session = 
     imp_pct =  evento.impureza_porcentagem or 0.0 
     evento.desconto_kg = round(evento.peso_liquido * (imp_pct / 100), 2)
 
-
-
-
     try:
         db.commit()
         db.refresh(evento)
@@ -306,9 +333,36 @@ def atualizar_evento(evento_id: int, dados: schemas.EventoUpdate, db: Session = 
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar: {e}")
 
+
+
 @app.get("/eventos/", response_model=List[schemas.EventoLPRResponse])
-def listar_eventos(db: Session = Depends(get_db)):
-    return db.query(models.EventoVMS).order_by(models.EventoVMS.id.desc()).limit(100).all()
+def listar_eventos(
+    skip: int = 0, 
+    limit: int = 100, 
+    termo: Optional[str] = None, 
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.EventoVMS)
+
+    if termo:
+        termo_limpo = termo.strip()
+        ticket_busca = None
+        if termo_limpo.isdigit():
+            ticket_busca = int(termo_limpo)
+
+        query = query.filter(
+            or_(
+                models.EventoVMS.placa_veiculo.ilike(f"%{termo_limpo}%"),
+                models.EventoVMS.fornecedor_nome.ilike(f"%{termo_limpo}%"),
+                models.EventoVMS.produto_declarado.ilike(f"%{termo_limpo}%"),
+                models.EventoVMS.tipo_sucata.ilike(f"%{termo_limpo}%"), 
+                models.EventoVMS.nota_fiscal.ilike(f"%{termo_limpo}%"),
+                models.EventoVMS.ticket_id == ticket_busca if ticket_busca else False
+            )
+        )
+
+    eventos = query.order_by(desc(models.EventoVMS.timestamp_registro)).offset(skip).limit(limit).all()
+    return eventos
 
 @app.get("/eventos/{evento_id}", response_model=schemas.EventoLPRResponse)
 def obter_detalhes_evento(evento_id: int, db: Session = Depends(get_db)):
@@ -400,17 +454,19 @@ def proxy_snapshot_garra_id(garra_id: int):
         return Response(status_code=404)
 
     cam = garras[garra_id]
-    url = f"http://{cam['ip']}/cgi-bin/snapshot.cgi"
+    url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=1"
 
     try:
-        resp = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), timeout=2)
-        if resp.status_code == 200:
-            return Response(content=resp.content, media_type="image/jpeg")
-        else:
-            return Response(status_code=resp.status_code)
+        req = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), stream=True, timeout=5)
+        return StreamingResponse(
+            req.iter_content(chunk_size=1024), 
+            media_type=req.headers.get("content-type", "multipart/x-mixed-replace; boundary=myboundary"),
+            status_code=req.status_code
+        )
     except Exception as e:
-        print(f"Erro proxy garra {garra_id}: {e}")
+        print(f"Erro no stream de video da garra {garra_id}: {e}")
         return Response(status_code=503)
+
 
 class GarraCaptureRequest(BaseModel):
     garra_id: int
@@ -477,3 +533,4 @@ def remover_foto_avaria(evento_id: int, dados: FotoDeleteRequest, db: Session = 
     db.commit()
 
     return {"status": "Foto removida"}
+

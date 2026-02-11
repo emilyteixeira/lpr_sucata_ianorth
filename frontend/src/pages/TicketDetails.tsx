@@ -122,7 +122,7 @@ export function TicketDetails() {
       {/* HEADER DE AÇÕES */}
       <div className="flex justify-between items-center no-print">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors font-medium">
-          <ArrowLeft size={20} /> DashBoard
+          <ArrowLeft size={20} /> dashboard
         </button>
                 <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-200 dark:bg-slate-700 px-4 py-2 rounded font-medium hover:bg-slate-300"><Printer size={18} /> Imprimir Relatório
                 </button>
