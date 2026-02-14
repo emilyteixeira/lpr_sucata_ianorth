@@ -416,7 +416,7 @@ def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session
     nome_seguro = file.filename.replace(" ", "_")
     nome_arquivo = f"avaria_{evento_id}_{timestamp_file}_{nome_seguro}"
 
-    caminho_fisico = os.path.join(static_dir, "snapshots", nome_arquivo)
+    caminho_fisico = os.path.join(STATIC_DIR, "snapshots", nome_arquivo)
 
     try:
         with open(caminho_fisico, "wb") as buffer:
@@ -457,10 +457,11 @@ def proxy_snapshot_garra_id(garra_id: int):
     url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=1"
 
     try:
-        req = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), stream=True, timeout=5)
+        req = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), stream=True, timeout=10)
+        content_type = req.headers.get("content-type", "multipart/x-mixed-replace; boundary=frame")
         return StreamingResponse(
             req.iter_content(chunk_size=1024), 
-            media_type=req.headers.get("content-type", "multipart/x-mixed-replace; boundary=myboundary"),
+            media_type=content_type,
             status_code=req.status_code
         )
     except Exception as e:
@@ -523,7 +524,7 @@ def remover_foto_avaria(evento_id: int, dados: FotoDeleteRequest, db: Session = 
         
         try:
             path_part = url_limpa.replace("/imagens/", "")
-            full_path = os.path.join(static_dir, path_part)
+            full_path = os.path.join(STATIC_DIR, path_part)
             if os.path.exists(full_path):
                 os.remove(full_path)
         except Exception:
