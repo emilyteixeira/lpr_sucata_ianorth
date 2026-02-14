@@ -20,8 +20,9 @@ const COLORS = [
 ];
 
 export function TruckVisualizer({ materiais }: TruckProps) {
-return (
+    return (
         <div className="w-full flex flex-col items-center mt-4">
+             {/* Legenda */}
              <div className="w-full flex flex-wrap justify-center gap-3 text-[10px] font-bold text-slate-500 mb-2">
                 {materiais.map((m, idx) => (
                     <div key={idx} className="flex items-center gap-1">
@@ -31,9 +32,19 @@ return (
                 ))}
             </div>
 
+            {/* Container Geral */}
             <div className="relative w-full max-w-lg h-64 border-b border-slate-200 dark:border-slate-700 mx-auto">
                 
-                <div className="absolute top-[65px] left-[40px] w-[350px] h-[100px] z-0 flex flex-col-reverse overflow-hidden rounded-sm opacity-90">
+                <div 
+                    className="absolute z-0 flex flex-col-reverse overflow-hidden opacity-90"
+                    style={{
+                        top: '65px',      // Ajuste para descer/subir a carga
+                        left: '40px',     // Ajuste para esquerda/direita
+                        width: '350px',   // Largura exata da caçamba
+                        height: '105px',  // Altura máxima da caçamba
+                        borderRadius: '0 0 5px 5px' // Leve curva no fundo se precisar
+                    }}
+                >
                     {materiais.map((m, idx) => (
                         <div 
                             key={idx}

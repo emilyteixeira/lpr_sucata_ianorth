@@ -19,6 +19,8 @@ const DENSITY_RANGES: Record<string, [number, number]> = {
   "SUCATA PACOTE MISTO": [0.4, 1.5]
 };
 
+const MAX_VOLUME_REF = 110; 
+
 interface Props {
     formData: Partial<EventoLPR>;
     setFormData: React.Dispatch<React.SetStateAction<Partial<EventoLPR>>>;
@@ -48,7 +50,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 setMateriais([{ tipo: ticket.tipo_sucata, pct: 100, impureza: 0 }]);
             }
         } else if (materiais.length === 0) {
-             setMateriais([{ tipo: "", pct: 100, impureza: 0 }]);
+             setMateriais([{ tipo: "", pct: 0, impureza: 0 }]); // Inicia zerado
         }
     }, [ticket]);
 
@@ -156,6 +158,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
+                
                 {/* LISTA DE MATERIAIS */}
                 <div className="md:col-span-6 space-y-3 border-r border-slate-200 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
@@ -166,7 +169,8 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                         {materiais.map((m, idx) => (
                             <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                                {/* Select */}
+                                
+                                {/* TIPO */}
                                 <div className="col-span-5">
                                     <label className="block text-[8px] text-slate-400 font-bold mb-0.5">TIPO SUCATA</label>
                                     <select className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 text-[10px] font-bold text-slate-800 dark:text-white rounded px-1 py-1 outline-none"
@@ -175,19 +179,23 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                         {Object.keys(DENSITY_RANGES).map(k => <option key={k} value={k}>{k}</option>)}
                                     </select>
                                 </div>
-                                {/* Vol % */}
+                                
+                                {/* VOL % (Sem o Zero) */}
                                 <div className="col-span-3">
                                     <label className="block text-[8px] text-slate-400 font-bold mb-0.5 text-center">VOL %</label>
                                     <input type="number" className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 py-1 text-center text-xs dark:text-white font-bold"
-                                        value={m.pct} onChange={e => updateMaterial(idx, 'pct', Number(e.target.value))} />
+                                        value={m.pct > 0 ? m.pct : ''} 
+                                        onChange={e => updateMaterial(idx, 'pct', Number(e.target.value))} />
                                 </div>
-                                {/* Imp % */}
+
+                                {/* IMP % (Sem o Zero) */}
                                 <div className="col-span-3">
                                     <label className="block text-[8px] text-red-400 font-bold mb-0.5 text-center">IMP %</label>
                                     <input type="number" className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-1 py-1 text-center text-xs text-red-600 dark:text-red-300 font-bold"
-                                        value={m.impureza} onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} />
+                                        value={m.impureza > 0 ? m.impureza : ''} 
+                                        onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} />
                                 </div>
-                                {/* Delete */}
+
                                 <div className="col-span-1 flex justify-center pt-3">
                                     <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={14}/></button>
                                 </div>
@@ -217,7 +225,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                         </div>
                     </div>
                     <div className="mt-2">
-                        <span className="text-[10px] uppercase text-slate-400 font-bold mb-1 justify-between">
+                        <span className="text-[10px] uppercase text-slate-400 font-bold block mb-1 flex justify-between">
                             <span>Dimensões (m)</span>
                             <span>Vol: <b className="text-blue-600">{vol.toFixed(2)} m³</b></span>
                         </span>
@@ -225,7 +233,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                             {['comprimento', 'largura', 'altura'].map(f => (
                                 <input key={f} type="number" placeholder={f[0].toUpperCase()}
                                     className="bg-white dark:bg-slate-900 border dark:border-slate-700 rounded px-1 py-1 text-center text-xs font-mono dark:text-white"
-                                    value={formData[`dim_${f}` as keyof EventoLPR] || ''} 
+                                    value={formData[`dim_${f}` as keyof EventoLPR] > 0 ? formData[`dim_${f}` as keyof EventoLPR] : ''} 
                                     onChange={e=>setFormData({...formData, [`dim_${f}`]: Number(e.target.value)})}
                                 />
                             ))}
