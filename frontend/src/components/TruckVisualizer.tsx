@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 interface MaterialItem {
   tipo: string;
-  pct: number;
+  peso: number;
   impureza: number;
 }
 
@@ -23,14 +23,14 @@ export function TruckVisualizer({ materiais }: TruckProps) {
   const normalized = useMemo(() => {
     const cleaned = materiais.map((m) => ({
       ...m,
-      pct: Number.isFinite(m.pct) ? Math.max(0, m.pct) : 0,
+      peso: Number.isFinite(m.peso) ? Math.max(0, m.peso) : 0,
     }));
 
-    const total = cleaned.reduce((acc, m) => acc + m.pct, 0);
+    const total = cleaned.reduce((acc, m) => acc + m.peso, 0);
 
     let arr = cleaned.map((m) => ({
       ...m,
-      pctNorm: total > 0 ? (m.pct / total) * 100 : 0,
+      pctNorm: total > 0 ? (m.peso / total) * 100 : 0,
     }));
 
     if (total > 0 && arr.length > 0) {
@@ -73,11 +73,10 @@ export function TruckVisualizer({ materiais }: TruckProps) {
       const offsetX = (cw - drawnW) / 2;
       const offsetY = (ch - drawnH) / 2;
 
-      // Valores corrigidos: subtraindo o offsetX que será somado depois
       // left=270px, mas offsetX≈96px, então bedX deve dar 174px (270-96)
       // 174px / 480px (img renderizada) = 0.3625
       // Convertendo para % da imagem original: 0.3625
-      const bedXPercent = 0.4800;  // CORRIGIDO para compensar offsetX
+      const bedXPercent = 0.4800;  
       const bedYPercent = 0.1200;
       const bedWPercent = 0.4700;
       const bedHPercent = 0.3906;

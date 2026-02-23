@@ -27,7 +27,7 @@ interface Props {
 
 interface MaterialItem {
     tipo: string;
-    pct: number;
+    peso: number;
     impureza: number;
 }
 
@@ -40,26 +40,26 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
             if (ticket.tipo_sucata.includes('=')) {
                 const itens = ticket.tipo_sucata.split(';').map(s => {
                     const [tipo, resto] = s.split('=');
-                    const [pct, imp] = (resto || '0').includes('|') ? resto.split('|') : [resto, '0'];
-                    return { tipo: tipo?.trim(), pct: Number(pct) || 0, impureza: Number(imp) || 0 };
+                    const [val1, imp] = (resto || '0').includes('|') ? resto.split('|') : [resto, '0'];
+                    return { tipo: tipo?.trim(), peso: Number(val1) || 0, impureza: Number(imp) || 0 };
                 });
                 setMateriais(itens);
             } else {
-                setMateriais([{ tipo: ticket.tipo_sucata, pct: 100, impureza: 0 }]);
+                setMateriais([{ tipo: ticket.tipo_sucata, peso: 100, impureza: 0 }]);
             }
         } else if (materiais.length === 0) {
-             setMateriais([{ tipo: "", pct: 0, impureza: 0 }]);
+             setMateriais([{ tipo: "", peso: 0, impureza: 0 }]);
         }
     }, [ticket]);
 
     useEffect(() => {
         if (materiais.length > 0) {
-            const str = materiais.map(m => `${m.tipo}=${m.pct}|${m.impureza}`).join(';');
+            const str = materiais.map(m => `${m.tipo}=${m.peso}|${m.impureza}`).join(';');
             setFormData(prev => ({...prev, tipo_sucata: str}));
         }
     }, [materiais, setFormData]);
 
-    const addMaterial = () => setMateriais([...materiais, { tipo: "", pct: 0, impureza: 0 }]);
+    const addMaterial = () => setMateriais([...materiais, { tipo: "", peso: 0, impureza: 0 }]);
     const removeMaterial = (idx: number) => { const n = [...materiais]; n.splice(idx,1); setMateriais(n); };
     
     const updateMaterial = (idx: number, field: keyof MaterialItem, val: any) => {
@@ -76,14 +76,17 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
     const alt = Number(formData.dim_altura) || 0;
     const vol = comp * larg * alt;
     
-    let totalPctVolume = 0;
+    let totalPesoInformado = 0;
+    materiais.forEach(m => totalPesoInformado += m.peso);
+
     let impurezaPonderada = 0;
     let minIdeal = 0; 
     let maxIdeal = 0;
 
     materiais.forEach(m => {
-        const pesoRelativo = m.pct / 100;
-        totalPctVolume += m.pct;
+        //Garantir que a conta bata com o peso da balança
+        const pesoRelativo = totalPesoInformado > 0 ? (m.peso / totalPesoInformado) : 0;
+
         impurezaPonderada += (m.impureza * pesoRelativo);
         const range = DENSITY_RANGES[m.tipo];
         if (range) {
@@ -92,27 +95,27 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
         }
     });
 
-    const fatorNorm = totalPctVolume > 0 ? (100 / totalPctVolume) : 1;
-    const mediaImpurezaFinal = impurezaPonderada * fatorNorm;
-    const minFinal = minIdeal * fatorNorm;
-    const maxFinal = maxIdeal * fatorNorm;
+    const mediaImpurezaFinal = impurezaPonderada;
+    const minFinal = minIdeal;
+    const maxFinal = maxIdeal; 
     const densidade = vol > 0 ? ((pesoLiquido / 1000) / vol) : 0;
-    const descontoKg = pesoLiquido * (mediaImpurezaFinal / 100);
-    const pesoFinal = pesoLiquido - descontoKg;
+
+    const descontoKgTotal = pesoLiquido * (mediaImpurezaFinal / 100);
+    const pesoFinal = pesoLiquido - descontoKgTotal;
 
     let statusTexto = "Aguardando dados";
     let statusCor = "text-slate-400";
     let statusBg = "bg-slate-100 dark:bg-slate-800 border-slate-200";
     let icone = <Scale size={14}/>;
 
-    if (totalPctVolume > 0 && vol > 0) {
+    if (totalPesoInformado > 0 && vol > 0) {
         if (mediaImpurezaFinal > 3.0) {
             statusTexto = `ALERTA R.I.M. (${mediaImpurezaFinal.toFixed(1)}%)`;
             statusCor = "text-red-700 dark:text-red-100";
             statusBg = "bg-red-100 dark:bg-red-900 border-red-500 animate-pulse";
             icone = <FileWarning size={14}/>;
         } else if (densidade < minFinal) {
-            statusTexto = "ABAIXO DA BAIXA";
+            statusTexto = "ABAIXO DA FAIXA";
             statusCor = "text-orange-700 dark:text-orange-200";
             statusBg = "bg-orange-100 dark:bg-orange-900/50 border-orange-300";
             icone = <AlertTriangle size={14}/>;
@@ -165,15 +168,26 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 <div className="md:col-span-6 space-y-3 border-r border-slate-200 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase">Composição da Carga</h4>
-                        <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline"><Plus size={12}/> Adicionar</button>
+                        <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline"><Plus size={12}/> Adicionar Tipo</button>
                     </div>
                     
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {materiais.map((m, idx) => (
+                        {materiais.map((m, idx) => {
+                            //Calculos por items
+                            const proporcao = totalPesoInformado > 0 ? (m.peso / totalPesoInformado) : 0;
+                            const pctVisual = proporcao * 100;
+                            const pesoBrutoRealDoItem = pesoLiquido * proporcao;
+                            const itemDesconto = pesoBrutoRealDoItem * (m.impureza / 100);
+                            const ItemLiquido = pesoBrutoRealDoItem - itemDesconto;
+                            
+
+
+
+                        return (
                             <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
                                 
                                 {/* TIPO */}
-                                <div className="col-span-5">
+                                <div className="col-span-4">
                                     <label className="block text-[8px] text-slate-400 font-bold mb-0.5">TIPO SUCATA</label>
                                     <select className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 text-[10px] font-bold text-slate-800 dark:text-white rounded px-1 py-1 outline-none"
                                         value={m.tipo} onChange={e => updateMaterial(idx, 'tipo', e.target.value)}>
@@ -182,37 +196,63 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                     </select>
                                 </div>
                                 
-                                {/* VOL % */}
-                                <div className="col-span-3">
-                                    <label className="block text-[8px] text-slate-400 font-bold mb-0.5 text-center">VOL %</label>
-                                    <input type="number" className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 py-1 text-center text-xs dark:text-white font-bold"
-                                        value={m.pct > 0 ? m.pct : ''} 
-                                        onChange={e => updateMaterial(idx, 'pct', Number(e.target.value))} />
+                                {/*Peso*/}
+                                <div className="col-span-2" >
+                                <label className="block text-[8px] text-slate-400 font-bold mb-0.5 text-center">PESO (kg)</label>
+                                <input 
+                                type="number"
+                                className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 text-center text[10px] dark:text-white font-bold"
+                                value={m.peso > 0 ? m.peso : ''}
+                                onChange={e => updateMaterial(idx, 'peso', Number(e.target.value))}
+                                ></input>
                                 </div>
+                                  
+                                  {/*porcentagem*/}
+                                   <div className="col-span-1 flex flex-col items-center justify-center pt-3">
+                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{pctVisual.toFixed(0)}%</span>
+                                    </div>
+
 
                                 {/* IMP % */}
-                                <div className="col-span-3">
+                                <div className="col-span-2">
                                     <label className="block text-[8px] text-red-400 font-bold mb-0.5 text-center">IMP %</label>
                                     <input type="number" className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-1 py-1 text-center text-xs text-red-600 dark:text-red-300 font-bold"
                                         value={m.impureza > 0 ? m.impureza : ''} 
                                         onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} />
                                 </div>
 
-                                <div className="col-span-1 flex justify-center pt-3">
-                                    <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={14}/></button>
+                        {/* RESULTADO DO ITEM */}
+                                    <div className="col-span-2 flex flex-col items-end justify-center pr-1 border-l border-slate-200 dark:border-slate-700 h-full">
+                                        {itemLiquido > 0 ? (
+                                            <>
+                                                <span className="text-[10px] font-bold text-green-700 dark:text-green-400 leading-tight">{itemLiquido.toFixed(0)} kg</span>
+                                                {itemDesconto > 0 && (
+                                                    <span className="text-[8px] font-bold text-red-500 dark:text-red-400 leading-tight">- {itemDesconto.toFixed(0)} kg</span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span className="text-[8px] text-slate-400 italic">0 kg</span>
+                                        )}
+                                    </div>
+
+                                    {/* LIXEIRA */}
+                                    <div className="col-span-1 flex justify-center pt-3">
+                                        <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={13}/></button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
-                    {totalPctVolume !== 100 && (
-                        <div className={`text-[10px] font-bold text-right ${totalPctVolume > 100 ? 'text-red-500' : 'text-orange-500'}`}>
-                            Total: {totalPctVolume}% (Ajuste para 100%)
+
+                        {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
+                        <div className={`text-[10px] font-bold text-right mt-1${totalPesoInformado > pesoLiquido ? 'text-red-500' : 'text-orange-500'}`}>
+                            Liquido da Balança: {pesoLiquido.toLocaleString()} kg | Total Distribuído: {totalPesoInformado.toLocaleString()} Kg (Ajuste para 100%)
                         </div>
                     )}
                 </div>
 
                 {/* DIMENSÕES */}
-                <div className="md:col-span-3 space-y-4 border-r border-slate-200 dark:border-slate-700 pr-4 flex flex-col justify-center">
+                <div className="md:col-span-2 space-y-4 border-r border-slate-200 dark:border-slate-700 pr-4 flex flex-col justify-center">
                     <div className="grid grid-cols-1 gap-3">
                         <div>
                             <span className="text-[10px] uppercase text-slate-400 font-bold block mb-1">Peso Bruto</span>
@@ -267,9 +307,9 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                         <span className="text-2xl font-mono font-bold text-green-800 dark:text-green-300 tracking-tight">
                             {pesoFinal.toLocaleString()} <span className="text-xs">kg</span>
                         </span>
-                        {descontoKg > 0 && (
+                        {descontoKgTotal > 0 && (
                             <div className="text-[9px] text-red-500 font-bold mt-1 bg-white/50 dark:bg-black/20 rounded px-1">
-                                - {descontoKg.toFixed(0)} kg (Desc. Impureza)
+                                - {descontoKgTotal.toFixed(0)} kg (Desc. Impureza)
                             </div>
                         )}
                     </div>
