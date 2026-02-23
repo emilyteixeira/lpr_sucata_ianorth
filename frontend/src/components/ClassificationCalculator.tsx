@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Calculator, Scale, Save, Plus, Trash2, FileWarning, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Calculator, Scale, Plus, Trash2, FileWarning, CheckCircle, AlertTriangle } from 'lucide-react';
 import { TruckVisualizer } from './TruckVisualizer';
 import type { EventoLPR } from '../types';
-import { API_BASE_URL } from '../config';
 
 const DENSITY_RANGES: Record<string, [number, number]> = {
   "SUCATA MISTA": [0.2, 0.6],
@@ -27,13 +26,12 @@ interface Props {
 
 interface MaterialItem {
     tipo: string;
-    peso: number; 
+    peso: number;
     impureza: number;
 }
 
 export function ClassificationCalculator({ formData, setFormData, ticket }: Props) {
-    const [saving, setSaving] = useState(false);
-    const [materiais, setMateriais] = useState<MaterialItem[]>([]);
+    const [materiais, setMateriais] = React.useState<MaterialItem[]>([]);
 
     useEffect(() => {
         if (ticket?.tipo_sucata && materiais.length === 0) {
@@ -53,10 +51,22 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
     }, [ticket]);
 
     useEffect(() => {
-        if (materiais.length > 0) {
-            const str = materiais.map(m => `${m.tipo}=${m.peso}|${m.impureza}`).join(';');
-            setFormData(prev => ({...prev, tipo_sucata: str}));
-        }
+        let totalPesoInfo = 0;
+        let totalImpurezaKgInfo = 0;
+        materiais.forEach(m => {
+            totalPesoInfo += m.peso;
+            totalImpurezaKgInfo += m.impureza;
+        });
+
+        const mediaImpurezaCalculada = totalPesoInfo > 0 ? (totalImpurezaKgInfo / totalPesoInfo) * 100 : 0;
+        const strTipos = materiais.map(m => `${m.tipo}=${m.peso}|${m.impureza}`).join(';');
+        
+        setFormData(prev => {
+            if (prev.tipo_sucata === strTipos && prev.impureza_porcentagem === mediaImpurezaCalculada) {
+                return prev;
+            }
+            return { ...prev, tipo_sucata: strTipos, impureza_porcentagem: mediaImpurezaCalculada };
+        });
     }, [materiais, setFormData]);
 
     const addMaterial = () => setMateriais([...materiais, { tipo: "", peso: 0, impureza: 0 }]);
@@ -80,8 +90,8 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
     let totalPesoInformado = 0;
     let totalImpurezaKgInformada = 0;
     materiais.forEach(m => {
-    totalPesoInformado += m.peso;
-    totalImpurezaKgInformada += m.impureza;
+        totalPesoInformado += m.peso;
+        totalImpurezaKgInformada += m.impureza;
     });
 
     let minIdeal = 0; 
@@ -97,7 +107,6 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
     });
 
     const mediaImpurezaFinal = totalPesoInformado > 0 ? (totalImpurezaKgInformada / totalPesoInformado) * 100 : 0;
-
     const minFinal = minIdeal;
     const maxFinal = maxIdeal;
     const densidade = vol > 0 ? ((pesoLiquido / 1000) / vol) : 0;
@@ -134,43 +143,21 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
         }
     }
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-             await fetch(`${API_BASE_URL}/eventos/${ticket?.id}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    peso_tara: pesoTara,
-                    dim_comprimento: comp,
-                    dim_largura: larg,
-                    dim_altura: alt,
-                    impureza_porcentagem: mediaImpurezaFinal,
-                    tipo_sucata: formData.tipo_sucata,
-                })
-            });
-            alert("Classificação salva com sucesso!");
-        } catch(e) { alert("Erro ao salvar."); } finally { setSaving(false); }
-    };
-
     return (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mt-6 overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                 <h3 className="font-bold flex items-center gap-2 dark:text-white">
                     <Calculator size={20} className="text-green-600"/> Classificação & Cubagem
                 </h3>
-                <button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2">
-                    <Save size={16}/> {saving ? 'Salvando...' : 'Salvar Cálculo'}
-                </button>
             </div>
 
             <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
-                {/* MATERIAIS */}
+                {/* LISTA DE MATERIAIS */}
                 <div className="lg:col-span-7 space-y-3 border-r border-slate-200 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase">Composição da Carga</h4>
-                        <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline"><Plus size={12}/> Adicionar Sucata</button>
+                        <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline"><Plus size={12}/> Adicionar</button>
                     </div>
                     
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -183,10 +170,8 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                             const itemLiquido = pesoBrutoRealDoItem - itemDesconto;
 
                             return (
-                                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
-                                    
-                                    {/* TIPO */}
-                                    <div className="col-span-4">
+                                <div key={idx} className="grid grid-cols-12 gap-1 items-center bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
+                                    <div className="col-span-3">
                                         <label className="block text-[8px] text-slate-400 font-bold mb-0.5">TIPO SUCATA</label>
                                         <select className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 text-[9px] font-bold text-slate-800 dark:text-white rounded px-1 py-1 outline-none focus:ring-1 focus:ring-blue-500"
                                             value={m.tipo} onChange={e => updateMaterial(idx, 'tipo', e.target.value)}>
@@ -194,48 +179,32 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                             {Object.keys(DENSITY_RANGES).map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
                                     </div>
-                                    
-                                    {/* INPUT PESO  */}
-                                    <div className="col-span-2">
+                                    <div className="col-span-2 pl-1">
                                         <label className="block text-[8px] text-slate-400 font-bold mb-0.5 text-center">PESO (kg)</label>
                                         <input type="number" className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 py-1 text-center text-[10px] dark:text-white font-bold"
                                             value={m.peso > 0 ? m.peso : ''} 
                                             onChange={e => updateMaterial(idx, 'peso', Number(e.target.value))} />
                                     </div>
-
-                                    {/* PORCENTAGEM */}
                                     <div className="col-span-1 flex flex-col items-center justify-center pt-3">
                                         <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400" title="% da Carga">{pctVisual.toFixed(0)}%</span>
                                     </div>
-
-                                    {/* IMPUREZA */}
                                     <div className="col-span-2">
                                         <label className="block text-[8px] text-red-400 font-bold mb-0.5 text-center">IMP (kg)</label>
                                         <input type="number" className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-1 py-1 text-center text-[10px] text-red-600 dark:text-red-300 font-bold"
                                             value={m.impureza > 0 ? m.impureza : ''} 
                                             onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} />
                                     </div>
-
-                                    {/* IMPUREZA %*/}
                                     <div className="col-span-1 flex flex-col items-center justify-center pt-3">
                                         <span className="text-[9px] font-bold text-red-500 dark:text-red-400" title="% Impureza deste material">{impPct.toFixed(1)}%</span>
                                     </div>
-
-                                    {/* RESULTADO LIQUIDO DO ITEM */}
                                     <div className="col-span-2 flex flex-col items-end justify-center pr-1 border-l border-slate-200 dark:border-slate-700 h-full">
                                         {itemLiquido > 0 ? (
                                             <>
                                                 <span className="text-[10px] font-bold text-green-700 dark:text-green-400 leading-tight">{itemLiquido.toFixed(0)} kg</span>
-                                                {itemDesconto > 0 && (
-                                                    <span className="text-[8px] font-bold text-red-500 dark:text-red-400 leading-tight">- {itemDesconto.toFixed(0)} kg</span>
-                                                )}
+                                                {itemDesconto > 0 && <span className="text-[8px] font-bold text-red-500 dark:text-red-400 leading-tight">- {itemDesconto.toFixed(0)} kg</span>}
                                             </>
-                                        ) : (
-                                            <span className="text-[8px] text-slate-400 italic">0 kg</span>
-                                        )}
+                                        ) : <span className="text-[8px] text-slate-400 italic">0 kg</span>}
                                     </div>
-
-                                    {/* LIXEIRA */}
                                     <div className="col-span-1 flex justify-center pt-3">
                                         <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={13}/></button>
                                     </div>
@@ -244,10 +213,9 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                         })}
                     </div>
 
-                    {/* ALERTA DE PESO */}
                     {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
                         <div className={`text-[10px] font-bold text-right mt-1 ${totalPesoInformado > pesoLiquido ? 'text-red-500' : 'text-orange-500'}`}>
-                            Líquido da Balança: {pesoLiquido.toLocaleString()} kg | Total Distribuído: {totalPesoInformado.toLocaleString()} kg 
+                            Líquido da Balança: {pesoLiquido.toLocaleString()} kg | Soma Digitada: {totalPesoInformado.toLocaleString()} kg 
                         </div>
                     )}
                 </div>
@@ -291,7 +259,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                     </div>
                 </div>
 
-                {/* RESULTADOS FINAIS */}
+                {/* RESULTADOS */}
                 <div className="lg:col-span-3 flex flex-col justify-between h-full">
                     <div className="text-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Status da Carga</span>
@@ -309,7 +277,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                             {pesoFinalTotal.toLocaleString()} <span className="text-xs">kg</span>
                         </span>
                         {descontoKgTotal > 0 && (
-                            <div className="text-[9px] text-red-500 font-bold mt-1 bg-white/50 dark:bg-black/20 rounded px-1">
+                            <div className="text-[9px] text-red-500 font-bold mt-1 bg-white/50 dark:bg-black/20 rounded px-1 inline-block">
                                 - {descontoKgTotal.toFixed(0)} kg (Impureza Total)
                             </div>
                         )}
@@ -317,7 +285,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 </div>
             </div>
 
-            {/* CARRETA 2D*/}
+            {/* CARRETA 2D */}
             <div className="px-6 pb-6 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 pt-4">
                 <TruckVisualizer materiais={materiais} />
             </div>
