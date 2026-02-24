@@ -47,7 +47,14 @@ export function History() {
 
   const eventosExibidos = eventos.filter(evt => {
     const matchData = filtroData ? evt.timestamp_registro.includes(filtroData) : true;
-    const matchStatus = statusFilter ? (evt.status_ticket === statusFilter) : true;
+    
+    let matchStatus = true;
+    if (statusFilter === 'Finalizado') {
+        matchStatus = evt.status_ticket === 'Finalizado';
+    } else if (statusFilter === 'Aberto') {
+        matchStatus = evt.status_ticket !== 'Finalizado';
+    }
+    
     return matchData && matchStatus;
   });
 

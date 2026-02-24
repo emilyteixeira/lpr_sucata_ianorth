@@ -73,11 +73,17 @@ export function Dashboard() {
                 <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-600 rounded-lg"><CheckCircle size={24}/></div>
             </div>
 
-            {/* Triagem */}
-            <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-xl border border-light-border dark:border-dark-border shadow-sm flex justify-between items-start">
+            {/* Triagem  */}
+            <div 
+                onClick={() => navigate('/history?status=Aberto')} 
+                className="bg-light-surface dark:bg-dark-surface p-6 rounded-xl border border-light-border dark:border-dark-border shadow-sm flex justify-between items-start cursor-pointer hover:ring-2 hover:ring-blue-500 transition group"
+            >
                 <div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Em Triagem (Hoje)</p>
                     <h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-2">{abertosHoje}</h3>
+                    <span className="inline-flex items-center text-xs font-bold mt-2 text-orange-500 group-hover:underline">
+                        Ver tickets em aberto
+                    </span>
                 </div>
                 <div className="p-3 bg-orange-50 dark:bg-orange-900/30 text-orange-600 rounded-lg"><Clock size={24}/></div>
             </div>
@@ -86,16 +92,16 @@ export function Dashboard() {
             <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-xl border border-light-border dark:border-dark-border shadow-sm flex justify-between items-start">
                 <div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sucata Líquida (Hoje)</p>
-                    <h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-2 tracking-tight">
-                        {totalPesoLiquidoDia.toLocaleString(undefined, {maximumFractionDigits: 0})} <span className="text-sm font-normal text-slate-500">kg</span>
+                    <h3 className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1 tracking-tight">
+                        {totalPesoLiquidoDia.toLocaleString(undefined, {maximumFractionDigits: 0})} <span className="text-sm font-normal text-green-600/70 dark:text-green-400/70">kg</span>
                     </h3>
                     
-                    {/* Impureza do Dia */}
-                    {totalImpurezaKgDia > 0 && (
-                        <span className="inline-flex items-center text-[10px] font-bold mt-2 text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded border border-red-100 dark:border-red-800">
+                    {/* Impureza */}
+                    <div className="mt-2">
+                        <span className="inline-flex items-center text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-100 dark:border-red-800/50">
                             - {totalImpurezaKgDia.toLocaleString(undefined, {maximumFractionDigits: 0})} kg de Impurezas
                         </span>
-                    )}
+                    </div>
                 </div>
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg"><Weight size={24}/></div>
             </div>
