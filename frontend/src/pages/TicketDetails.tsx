@@ -19,16 +19,12 @@ export function TicketDetails() {
 
     const [ticket, setTicket] = useState<EventoLPR | null>(null);
     const [loading, setLoading] = useState(true);
-
     const [formData, setFormData] = useState<Partial<EventoLPR>>({});
-
     const [uploading, setUploading] = useState(false);
     const [mediaModal, setMediaModal] = useState<{url: string, type: 'image' | 'video'} | null>(null);
-
     const [listaGarras, setListaGarras] = useState<GarraConfig[]>([]);
     const [cameraAtivaId, setCameraAtivaId] = useState<number | null>(null);
     const [capturando, setCapturando] = useState(false);
-
     const [saving, setSaving] = useState(false);
 
     useEffect(() => { carregarDados(); carregarGarras(); }, [id]);
@@ -147,6 +143,7 @@ export function TicketDetails() {
     if (loading) return <div className="p-10 text-center">Carregando...</div>;
     if (!ticket) return <div className="p-10 text-center text-red-500">Erro ao carregar ticket.</div>;
 
+    const isFinalizado = ticket.status_ticket === 'Finalizado';
     const listaFotos = ticket.fotos_avaria ? ticket.fotos_avaria.split(',').filter(x=>x) : [];
     const pesoBruto = ticket.peso_balanca || 0;
     const pesoTara = Number(formData.peso_tara) || 0;
@@ -170,6 +167,7 @@ export function TicketDetails() {
                         <Printer size={16} /> Imprimir Relatório
                     </button>
 
+                    {isFinalizado && (
                     <button 
                         onClick={handleFinalizarTicket}
                         disabled={saving}
@@ -177,6 +175,7 @@ export function TicketDetails() {
                     > 
                         <CheckCircle size={16}/> {saving ? 'Salvando tudo...' : 'Finalizar Ticket'}
                     </button>
+                    )}
                 </div>
             </div>
 
@@ -200,9 +199,9 @@ export function TicketDetails() {
                         </div>
                     </div>
 
-                    <div className={`px-5 py-2 rounded-full border text-center flex items-center gap-2 ${ticket.status_ticket?.toLowerCase().includes('final') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                    <div className={`px-5 py-2 rounded-full border text-center flex items-center gap-2 ${isFinalizado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                         <span className="block text-[10px] uppercase font-bold opacity-70">Status</span>
-                        <span className="text-lg font-bold tracking-tight">{ticket.status_ticket}</span>
+                        <span className="text-lg font-bold tracking-tight">{ticket.status_ticket || 'EM ABERTO'}</span>
                     </div>
                 </div>
 
@@ -330,7 +329,7 @@ export function TicketDetails() {
             </div>
 
             {/* CALCULADORA  + RIM */}
-            <ClassificationCalculator formData={formData} setFormData={setFormData} ticket={ticket} />
+            <ClassificationCalculator formData={formData} setFormData={setFormData} ticket={ticket} isFinalizado={isFinalizado} />
 
             {/* MONITOR DE GARRAS */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm no-print">
@@ -361,6 +360,7 @@ export function TicketDetails() {
                                 placeholder="Descreva detalhes sobre a classificação: Eventos e impurezas..."
                                 value={formData.observacao || ''}
                                 onChange={(e) => setFormData({...formData, observacao: e.target.value})}
+                                disabled={isFinalizado}
                             />
                         </div>
 
@@ -378,10 +378,12 @@ export function TicketDetails() {
                                 />
                                 <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded animate-pulse flex items-center gap-1"><span className="w-2 h-2 bg-white rounded-full"></span> AO VIVO</div>
 
+                                {!isFinalizado && (
                                 <button onClick={handleCapturaGarra} disabled={capturando} 
                                     className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-slate-900 px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
                                     {capturando ? 'Salvando...' : <><Camera size={18} className="text-red-600"/> Capturar Evidência</>}
                                 </button>
+                                )}
                             </div>
                         ) : (
                                 <div className="w-full h-full min-h-[250px] bg-slate-100 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 gap-2">

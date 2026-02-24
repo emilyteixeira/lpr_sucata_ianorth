@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calculator, Scale, Plus, Trash2, FileWarning, CheckCircle, AlertTriangle } from 'lucide-react';
 import { TruckVisualizer } from './TruckVisualizer';
 import type { EventoLPR } from '../types';
@@ -22,6 +22,7 @@ interface Props {
     formData: Partial<EventoLPR>;
     setFormData: React.Dispatch<React.SetStateAction<Partial<EventoLPR>>>;
     ticket: EventoLPR | null;
+    isFinalizado?: boolean; 
 }
 
 interface MaterialItem {
@@ -30,8 +31,8 @@ interface MaterialItem {
     impureza: number;
 }
 
-export function ClassificationCalculator({ formData, setFormData, ticket }: Props) {
-    const [materiais, setMateriais] = React.useState<MaterialItem[]>([]);
+export function ClassificationCalculator({ formData, setFormData, ticket, isFinalizado = false }: Props) {
+    const [materiais, setMateriais] = useState<MaterialItem[]>([]);
 
     useEffect(() => {
         if (ticket?.tipo_sucata && materiais.length === 0) {
@@ -61,13 +62,15 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
         const mediaImpurezaCalculada = totalPesoInfo > 0 ? (totalImpurezaKgInfo / totalPesoInfo) * 100 : 0;
         const strTipos = materiais.map(m => `${m.tipo}=${m.peso}|${m.impureza}`).join(';');
         
-        setFormData(prev => {
-            if (prev.tipo_sucata === strTipos && prev.impureza_porcentagem === mediaImpurezaCalculada) {
-                return prev;
-            }
-            return { ...prev, tipo_sucata: strTipos, impureza_porcentagem: mediaImpurezaCalculada };
-        });
-    }, [materiais, setFormData]);
+        if (!isFinalizado) {
+            setFormData(prev => {
+                if (prev.tipo_sucata === strTipos && prev.impureza_porcentagem === mediaImpurezaCalculada) {
+                    return prev;
+                }
+                return { ...prev, tipo_sucata: strTipos, impureza_porcentagem: mediaImpurezaCalculada };
+            });
+        }
+    }, [materiais, setFormData, isFinalizado]);
 
     const addMaterial = () => setMateriais([...materiais, { tipo: "", peso: 0, impureza: 0 }]);
     const removeMaterial = (idx: number) => { const n = [...materiais]; n.splice(idx,1); setMateriais(n); };
@@ -126,7 +129,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
             statusBg = "bg-red-100 dark:bg-red-900 border-red-500 animate-pulse";
             icone = <FileWarning size={14}/>;
         } else if (densidade < minFinal) {
-            statusTexto = "ABAIXO DA FAIXA";
+            statusTexto = "ABAIXO da FAIXA";
             statusCor = "text-orange-700 dark:text-orange-200";
             statusBg = "bg-orange-100 dark:bg-orange-900/50 border-orange-300";
             icone = <AlertTriangle size={14}/>;
@@ -149,6 +152,12 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 <h3 className="font-bold flex items-center gap-2 dark:text-white">
                     <Calculator size={20} className="text-green-600"/> Classificação & Cubagem
                 </h3>
+                {/* ETIQUETA DE SEGURANÇA */}
+                {isFinalizado && (
+                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded">
+                        SOMENTE LEITURA
+                    </span>
+                )}
             </div>
 
             <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -157,7 +166,11 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 <div className="lg:col-span-7 space-y-3 border-r border-slate-200 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase">Composição da Carga</h4>
-                        <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline"><Plus size={12}/> Adicionar</button>
+                        {!isFinalizado && (
+                            <button onClick={addMaterial} className="text-xs text-blue-600 font-bold flex gap-1 hover:underline">
+                                <Plus size={12}/> Adicionar Sucata
+                            </button>
+                        )}
                     </div>
                     
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -173,26 +186,26 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                 <div key={idx} className="grid grid-cols-12 gap-1 items-center bg-slate-50 dark:bg-slate-900 p-2 rounded border border-slate-200 dark:border-slate-700">
                                     <div className="col-span-3">
                                         <label className="block text-[8px] text-slate-400 font-bold mb-0.5">TIPO SUCATA</label>
-                                        <select className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 text-[9px] font-bold text-slate-800 dark:text-white rounded px-1 py-1 outline-none focus:ring-1 focus:ring-blue-500"
-                                            value={m.tipo} onChange={e => updateMaterial(idx, 'tipo', e.target.value)}>
+                                        <select className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 text-[9px] font-bold text-slate-800 dark:text-white rounded px-1 py-1 outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
+                                            value={m.tipo} onChange={e => updateMaterial(idx, 'tipo', e.target.value)} disabled={isFinalizado}>
                                             <option value="">Selecione...</option>
                                             {Object.keys(DENSITY_RANGES).map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2 pl-1">
                                         <label className="block text-[8px] text-slate-400 font-bold mb-0.5 text-center">PESO (kg)</label>
-                                        <input type="number" className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 py-1 text-center text-[10px] dark:text-white font-bold"
+                                        <input type="number" className="w-full bg-white dark:bg-slate-700 border dark:border-slate-600 rounded px-1 py-1 text-center text-[10px] dark:text-white font-bold disabled:opacity-60"
                                             value={m.peso > 0 ? m.peso : ''} 
-                                            onChange={e => updateMaterial(idx, 'peso', Number(e.target.value))} />
+                                            onChange={e => updateMaterial(idx, 'peso', Number(e.target.value))} disabled={isFinalizado} />
                                     </div>
                                     <div className="col-span-1 flex flex-col items-center justify-center pt-3">
                                         <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400" title="% da Carga">{pctVisual.toFixed(0)}%</span>
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-[8px] text-red-400 font-bold mb-0.5 text-center">IMP (kg)</label>
-                                        <input type="number" className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-1 py-1 text-center text-[10px] text-red-600 dark:text-red-300 font-bold"
+                                        <input type="number" className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-1 py-1 text-center text-[10px] text-red-600 dark:text-red-300 font-bold disabled:opacity-60"
                                             value={m.impureza > 0 ? m.impureza : ''} 
-                                            onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} />
+                                            onChange={e => updateMaterial(idx, 'impureza', Number(e.target.value))} disabled={isFinalizado} />
                                     </div>
                                     <div className="col-span-1 flex flex-col items-center justify-center pt-3">
                                         <span className="text-[9px] font-bold text-red-500 dark:text-red-400" title="% Impureza deste material">{impPct.toFixed(1)}%</span>
@@ -206,7 +219,9 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                         ) : <span className="text-[8px] text-slate-400 italic">0 kg</span>}
                                     </div>
                                     <div className="col-span-1 flex justify-center pt-3">
-                                        <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={13}/></button>
+                                        {!isFinalizado && (
+                                            <button onClick={() => removeMaterial(idx)} className="text-slate-400 hover:text-red-500 transition"><Trash2 size={13}/></button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -231,8 +246,8 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                         </div>
                         <div>
                             <span className="text-[10px] uppercase text-slate-400 font-bold block mb-1">Tara Estimada</span>
-                            <input type="number" className="w-full font-mono text-sm font-bold bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded outline-none"
-                                value={formData.peso_tara > 0 ? formData.peso_tara : ''} onChange={e=>setFormData({...formData, peso_tara: Number(e.target.value)})}/>
+                            <input type="number" className="w-full font-mono text-sm font-bold bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded outline-none disabled:opacity-60"
+                                value={formData.peso_tara > 0 ? formData.peso_tara : ''} onChange={e=>setFormData({...formData, peso_tara: Number(e.target.value)})} disabled={isFinalizado} />
                         </div>
                     </div>
                     <div className="mt-2">
@@ -249,9 +264,10 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                                         key={f} 
                                         type="number" 
                                         placeholder={f[0].toUpperCase()}
-                                        className="bg-white dark:bg-slate-900 border dark:border-slate-700 rounded px-1 py-1 text-center text-xs font-mono dark:text-white"
+                                        className="bg-white dark:bg-slate-900 border dark:border-slate-700 rounded px-1 py-1 text-center text-xs font-mono dark:text-white disabled:opacity-60"
                                         value={valorAtual > 0 ? valorAtual : ''} 
                                         onChange={e => setFormData({...formData, [fieldName]: Number(e.target.value)})}
+                                        disabled={isFinalizado}
                                     />
                                 );
                             })}
@@ -259,7 +275,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                     </div>
                 </div>
 
-                {/* RESULTADOS */}
+                {/* RESULTADOS FINAIS */}
                 <div className="lg:col-span-3 flex flex-col justify-between h-full">
                     <div className="text-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Status da Carga</span>
@@ -267,7 +283,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                             {icone} {statusTexto}
                         </div>
                         <div className="mt-4 flex justify-between items-end border-b border-slate-100 dark:border-slate-700 pb-2">
-                            <span className="text-[10px] text-slate-400">Densidade </span>
+                            <span className="text-[10px] text-slate-400">Densidade Global</span>
                             <span className="text-xl font-mono font-bold text-slate-700 dark:text-white">{densidade.toFixed(3)}</span>
                         </div>
                     </div>
@@ -285,7 +301,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket }: Prop
                 </div>
             </div>
 
-            {/* CARRETA 2D */}
+            {/* CARRETA  2D*/}
             <div className="px-6 pb-6 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 pt-4">
                 <TruckVisualizer materiais={materiais} />
             </div>
