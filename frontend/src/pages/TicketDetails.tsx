@@ -167,7 +167,7 @@ export function TicketDetails() {
                         <Printer size={16} /> Imprimir Relatório
                     </button>
 
-                    {isFinalizado && (
+                    {!isFinalizado && (
                     <button 
                         onClick={handleFinalizarTicket}
                         disabled={saving}
