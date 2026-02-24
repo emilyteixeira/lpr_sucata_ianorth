@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, Printer, Truck, Scale, Camera, PlayCircle, Trash2,  
-    Monitor, Upload, Clock, FileText, User, Download, Save
+    Monitor, Upload, Clock, FileText, User, Download, Save,
+    CheckCircle
 } from 'lucide-react';
 
 import type { EventoLPR } from '../types';
@@ -28,7 +29,7 @@ export function TicketDetails() {
     const [cameraAtivaId, setCameraAtivaId] = useState<number | null>(null);
     const [capturando, setCapturando] = useState(false);
 
-    const [savingObs, setSavingObs] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => { carregarDados(); carregarGarras(); }, [id]);
 
@@ -49,6 +50,40 @@ export function TicketDetails() {
             })
             .catch(err => console.error(err));
     }
+
+    const handleFinalizarTicket = async () => {
+        const confirmacao = window.confirm(
+            "ATENÇÃO: Você está prestes a FINALIZAR a classificação deste ticket.\n\n" +
+          "Verifique se os materiais, pesos, cubagem, fotos e observações estão corretos.\n\n" +
+          "Deseja salvar tudo e liberar o motorista?"
+        );
+        if (!confirmacao) return;
+
+    setSaving(true);
+    try{
+            const payload = {
+                ...formData,
+                status_ticket: 'Finalizado'
+            };
+
+            const res = await fetch(`${API_BASE_URL}/eventos/${ticket?.id}`,{
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Ticket salvo e finalizado com sucesso!");
+                navigate('/');
+            }else {
+                alert("Erro ao finalizar o ticket no banco de dados.");
+            }
+        }catch (e) {
+            alert("Erro de conexão ao salvar.");
+        } finally {
+            setSaving(false);
+        }
+    }; 
 
     const handleCapturaGarra = async () => {
         if (cameraAtivaId === null) return;
@@ -87,24 +122,6 @@ export function TicketDetails() {
             }
         } catch(e) { alert("Erro."); }
     }
-
-    const handleSaveObservacao = async () => {
-        if (!ticket) return;
-        setSavingObs(true);
-        try {
-            await fetch(`${API_BASE_URL}/eventos/${ticket.id}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ observacao: formData.observacao })
-            });
-            setTicket(prev => prev ? ({...prev, observacao: formData.observacao} as EventoLPR) : null);
-            alert("Observação registrada com sucesso!");
-        } catch (e) {
-            alert("Erro ao salvar observação.");
-        } finally {
-            setSavingObs(false);
-        }
-    };
 
     const atualizarListaFotos = (url: string) => {
         const nova = ticket?.fotos_avaria ? `${ticket.fotos_avaria},${url}` : url;
@@ -151,6 +168,14 @@ export function TicketDetails() {
                     </button>
                     <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 transition text-sm shadow-md">
                         <Printer size={16} /> Imprimir Relatório
+                    </button>
+
+                    <button 
+                        onClick={handleFinalizarTicket}
+                        disabled={saving}
+                        className="flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-500 transition text-sm shadow-md disabled:opacity-50"
+                    > 
+                        <CheckCircle size={16}/> {saving ? 'Salvando tudo...' : 'Finalizar Ticket'}
                     </button>
                 </div>
             </div>
@@ -330,17 +355,10 @@ export function TicketDetails() {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase">Observações do Classificador</label>
-                                <button 
-                                    onClick={handleSaveObservacao}
-                                    disabled={savingObs}
-                                    className="text-[10px] font-bold bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 px-2 py-1 rounded transition disabled:opacity-50"
-                                >
-                                    {savingObs ? 'Salvando...' : 'Salvar Texto'}
-                                </button>
                             </div>
                             <textarea 
                                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 h-24 text-sm text-slate-700 dark:text-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-slate-400"
-                                placeholder="Descreva detalhes sobre a classificação ou avarias..."
+                                placeholder="Descreva detalhes sobre a classificação: Eventos e impurezas..."
                                 value={formData.observacao || ''}
                                 onChange={(e) => setFormData({...formData, observacao: e.target.value})}
                             />
