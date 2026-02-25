@@ -292,6 +292,14 @@ def atualizar_evento(evento_id: int, dados: schemas.EventoUpdate, db: Session = 
     if dados.impureza_porcentagem is not None: evento.impureza_porcentagem = dados.impureza_porcentagem
     if dados.tipo_sucata is not None: evento.tipo_sucata = dados.tipo_sucata
 
+    def safe_float(val):
+        try:
+            if val is None: return 0.0
+            if isinstance(val, str) and val.strip() == "": return 0.0
+            return float(val)
+        except Exception:
+            return 0.0
+
         # Calculos automatico
     p_bruto = float(evento.peso_balanca or 0.0)
     p_tara = float(evento.peso_tara or 0.0) 
