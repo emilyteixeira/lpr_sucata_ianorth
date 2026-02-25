@@ -55,6 +55,8 @@ export function Dashboard() {
       }
   });
 
+    const eventosEmAberto = eventos.filter(e => e.status_ticket !== 'Finalizado');
+
   return (
     <div className="space-y-6 animate-fade-in">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -116,7 +118,7 @@ export function Dashboard() {
         </div>
         
         <EventsTable 
-            eventos={eventos} 
+            eventos={eventosEmAberto} 
             onViewImage={handleOpenImage} 
             onViewVideo={handleOpenVideo}
         />

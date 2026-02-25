@@ -12,7 +12,6 @@ export function Settings() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // CORREÇÃO: Usando a URL dinâmica
     fetch(`${API_BASE_URL}/config/camera`)
       .then(res => res.json())
       .then(data => {
@@ -32,7 +31,6 @@ export function Settings() {
     setMsg(null);
 
     try {
-        // CORREÇÃO: Usando a URL dinâmica
         const res = await fetch(`${API_BASE_URL}/config/camera`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
