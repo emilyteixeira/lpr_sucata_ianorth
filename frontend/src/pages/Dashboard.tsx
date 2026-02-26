@@ -38,6 +38,8 @@ export function Dashboard() {
   const finalizadosHoje = eventos.filter(e => e.status_ticket === 'Finalizado' && e.timestamp_registro.includes(todayDate)).length;
   const abertosHoje = eventos.filter(e => e.status_ticket !== 'Finalizado' && e.timestamp_registro.includes(todayDate)).length;
 
+  // Calculos de Pesos
+  let totalPesoBrutoDia = 0;
   let totalPesoLiquidoDia = 0;
   let totalImpurezaKgDia = 0;
 
@@ -50,12 +52,13 @@ export function Dashboard() {
           const impurezaPct = Number(e.impureza_porcentagem) || 0;
           const impurezaKg = pesoLiquido * (impurezaPct / 100);
           
+          totalPesoBrutoDia += pesoBruto;
           totalPesoLiquidoDia += (pesoLiquido - impurezaKg);
           totalImpurezaKgDia += impurezaKg;
       }
   });
 
-    const eventosEmAberto = eventos.filter(e => e.status_ticket !== 'Finalizado' && e.timestamp_registro.includes(todayDate));
+  const eventosEmAberto = eventos.filter(e => e.status_ticket !== 'Finalizado' && e.timestamp_registro.includes(todayDate));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -90,29 +93,40 @@ export function Dashboard() {
                 <div className="p-3 bg-orange-50 dark:bg-orange-900/30 text-orange-600 rounded-lg"><Clock size={24}/></div>
             </div>
 
-            {/* Pesos do Dia */}
+            {/* CARD 3: Layout Recibo (Bruto / Líquido / Descontos) */}
             <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-xl border border-light-border dark:border-dark-border shadow-sm flex justify-between items-start">
-                <div>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sucata Líquida (Hoje)</p>
-                    <h3 className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1 tracking-tight">
-                        {totalPesoLiquidoDia.toLocaleString(undefined, {maximumFractionDigits: 0})} <span className="text-sm font-normal text-green-600/70 dark:text-green-400/70">kg</span>
-                    </h3>
+                <div className="w-full pr-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-3">Balanço Diário (Hoje)</p>
+                    
+                    <div className="flex justify-between items-end border-b border-slate-100 dark:border-slate-700 pb-2 mb-2">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">Peso Bruto Total</span>
+                        <span className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                            {totalPesoBrutoDia.toLocaleString(undefined, {maximumFractionDigits: 0})} <span className="text-xs font-normal">kg</span>
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between items-end">
+                        <span className="text-xs text-green-600 dark:text-green-500 font-bold uppercase">Sucata Líquida</span>
+                        <span className="text-2xl font-bold text-green-600 dark:text-green-400 tracking-tight">
+                            {totalPesoLiquidoDia.toLocaleString(undefined, {maximumFractionDigits: 0})} <span className="text-sm font-normal">kg</span>
+                        </span>
+                    </div>
                     
                     {/* Impureza */}
-                    <div className="mt-2">
-                        <span className="inline-flex items-center text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-100 dark:border-red-800/50">
-                            - {totalImpurezaKgDia.toLocaleString(undefined, {maximumFractionDigits: 0})} kg de Impurezas
+                    <div className="mt-3">
+                        <span className="inline-flex items-center text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-100 dark:border-red-800/50 w-full justify-center">
+                            - {totalImpurezaKgDia.toLocaleString(undefined, {maximumFractionDigits: 0})} kg de impurezas 
                         </span>
                     </div>
                 </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg"><Weight size={24}/></div>
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-lg shrink-0"><Weight size={24}/></div>
             </div>
 
         </div>
 
         <div className="flex justify-between items-center pt-4">
             <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
-                Monitoramento em Tempo Real
+                Fila de Classificação
             </h3>
             <span className="text-xs text-slate-500">Atualizando a cada 2s</span>
         </div>

@@ -36,6 +36,18 @@ class EventoVMS(Base):
     observacao = Column(String(1000), nullable=True)
     fotos_avaria = Column(String(4000), nullable=True)
 
+    # COLUNAS DA CLASSIFICAÇÃO 
+    peso_tara = Column(Float, nullable=True)
+    peso_liquido = Column(Float, nullable=True)
+    dim_comprimento = Column(Float, nullable=True)
+    dim_largura = Column(Float, nullable=True)
+    dim_altura = Column(Float, nullable=True)
+    cubagem_m3 = Column(Float, nullable=True)
+    densidade = Column(Float, nullable=True)
+    impureza_porcentagem = Column(Float, nullable=True)
+    desconto_kg = Column(Float, nullable=True)
+
+
 class CameraConfig(Base):
     __tablename__ = "camera_config"
 
