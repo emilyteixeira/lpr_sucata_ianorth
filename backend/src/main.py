@@ -603,7 +603,7 @@ def proxy_video_stream(garra_id: int):
         print(f"Erro no proxy de vídeo da garra {garra_id}: {e}")
         return Response(status_code=503, content="Serviço indisponível")
 
-@app.get("/veiculos/{placa}/dados_cadastrais")
+@app.get("/veiculos/{placa}/dados-cadastrais")
 def obter_detalhes_veiculos(placa: str, db: Session = Depends(get_db)):
     ultimo_evento = db.query(models.EventoVMS).filter(
         models.EventoVMS.placa_veiculo == placa,
