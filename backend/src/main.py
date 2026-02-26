@@ -129,6 +129,7 @@ def _processamento_com_tentativas(placa: str, origem: str):
     intervalo_segundos = 15
     dados_api = None
     ticket_valido = False
+    raw_date = ""
 
     for tentativa in range(1, max_tentativas + 1):
         dados_api = sinobras.consultar_truck_arrival(placa)
@@ -210,7 +211,7 @@ def _processamento_com_tentativas(placa: str, origem: str):
             placa_veiculo=placa,
             camera_nome=origem,
             ticket_id=dados_api.get('ticket', '0'),
-            status_ticket='Aberto', # <-- REGRA 3: FORÇA O STATUS "Aberto"
+            status_ticket='Aberto', # FORÇA O STATUS "Aberto"
             fornecedor_nome=dados_api.get('fornecedor', ''),
             produto_declarado=dados_api.get('tipoProduto', ''),
             nota_fiscal=dados_api.get('notaFiscal', ''),
@@ -601,3 +602,19 @@ def proxy_video_stream(garra_id: int):
     except Exception as e:
         print(f"Erro no proxy de vídeo da garra {garra_id}: {e}")
         return Response(status_code=503, content="Serviço indisponível")
+
+@app.get("/veiculos/{placa}/dados_cadastrais")
+def obter_detalhes_veiculos(placa: str, db: Session = Depends(get_db)):
+    ultimo_evento = db.query(models.EventoVMS).filter(
+        models.EventoVMS.placa_veiculo == placa,
+        models.EventoVMS.peso_tara > 0 
+    ).order_by(desc(models.EventoVMS.timestamp_registro)).first()
+
+    if ultimo_evento:
+        return{
+            "peso_tara": ultimo_evento.peso_tara,
+            "dim_comprimento":ultimo_evento.dim_comprimento,
+            "dim_largura": ultimo_evento.dim_largura,
+            "dim_altura": ultimo_evento.dim_altura
+        }
+    return {}

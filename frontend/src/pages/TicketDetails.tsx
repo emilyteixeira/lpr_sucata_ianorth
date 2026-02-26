@@ -40,11 +40,35 @@ export function TicketDetails() {
             .then(res => res.json())
             .then(data => { 
                 setTicket(data);
-                setFormData(data);
-                setLoading(false); 
+                    
+                if (!data.peso_tara || data.peso_tara === 0){
+                    fetch(`${API_BASE_URL}/veiculos/${data.placa_veiculo}/dados-cadastrais`)
+                        .then(r => r.json())
+                        .then(historico => {
+                            setFormData({
+                                ...data,
+                                peso_tara: historico.peso_tara || data.peso_tara,
+                                dim_comprimento: historico.dim_comprimento || data.dim_comprimento,
+                                dim_largura: historico.dim_largura || data.dim_largura,
+                                dim_altura: historico.dim_altura || data.dim_altura
+                            });
+                            setLoading(false);
+                })
+                        .catch(() => {
+                            setFormData(data);
+                            setLoading(false);
+                        });
+                } else {
+                    setFormData(data);
+                    setLoading(false); 
+                }
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
     }
+
 
     const handleFinalizarTicket = async () => {
         const confirmacao = window.confirm(
