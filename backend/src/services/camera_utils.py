@@ -8,10 +8,10 @@ def salvar_snapshot_camera(ip, user, password, placa, nome_fixo=None):
     Conecta na câmera, baixa o snapshot e salva na pasta estática.
     Se nome_fixo for passado, usa ele. Se não, gera um automático.
     """
-    url = f"http://{ip}/cgi-bin/snapshot.cgi"
+    url = f"http://{ip}/cgi-bin/snapshot.cgi?channel=1&subtype=0"
     
     try:
-        response = requests.get(url, auth=HTTPDigestAuth(user, password), timeout=5)
+        response = requests.get(url, auth=HTTPDigestAuth(user, password), timeout=10)
         
         if response.status_code == 200:
             base_dir = os.path.dirname(os.path.abspath(__file__))
