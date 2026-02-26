@@ -487,7 +487,7 @@ def proxy_snapshot_garra_id(garra_id: int):
         req = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), stream=True, timeout=10)
         content_type = req.headers.get("content-type", "multipart/x-mixed-replace; boundary=frame")
         return StreamingResponse(
-            req.iter_content(chunk_size=1024), 
+            req.iter_content(chunk_size=4096), 
             media_type=content_type,
             status_code=req.status_code
         )
@@ -594,7 +594,7 @@ def proxy_video_stream(garra_id: int):
         content_type = req.headers.get("content-type", "multipart/x-mixed-replace; boundary=frame")
 
         return StreamingResponse(
-            req.iter_content(chunk_size=1024), 
+            req.iter_content(chunk_size=4096), 
             media_type=content_type,
             status_code=req.status_code
         )
