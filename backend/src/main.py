@@ -481,7 +481,7 @@ def proxy_snapshot_garra_id(garra_id: int):
         return Response(status_code=404)
 
     cam = garras[garra_id]
-    url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=1"
+    url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=0"
 
     try:
         req = requests.get(url, auth=HTTPDigestAuth(cam['user'], cam['password']), stream=True, timeout=10)
@@ -577,7 +577,7 @@ def proxy_video_stream(garra_id: int):
 
     cam = garras[garra_id]
     
-    stream_url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=1"
+    stream_url = f"http://{cam['ip']}/cgi-bin/mjpg/video.cgi?channel=1&subtype=0"
 
     try:
         req = requests.get(
