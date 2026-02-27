@@ -121,6 +121,7 @@ def _processamento_com_tentativas(placa: str, origem: str):
         tempo_passado = (agora - ultimas_placas_lidas[placa]).total_seconds()
         if tempo_passado < 120:
             print(f"Ignorando placa repetida {placa} (Lida há {tempo_passado:.0f}s)")
+            return
 
 
     ultimas_placas_lidas[placa] = agora
