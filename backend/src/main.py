@@ -600,15 +600,28 @@ def obter_detalhes_veiculos(placa: str, db: Session = Depends(get_db)):
             models.EventoVMS.placa_veiculo.ilike(f"%{placa_com_traco}%")
         ),
         models.EventoVMS.peso_tara > 0 
-    ).order_by(desc(models.EventoVMS.id)).first() 
+    ).order_by(desc(models.EventoVMS.id)).first()
 
     if ultimo_evento:
-        print(f"Memória ativada! Tara recuperada: {ultimo_evento.peso_tara} kg")
+        def arrumar_medida(valor, limite_logico):
+            v = float(valor or 0.0)
+            # Se a medida passar do limite físico de um caminhão,
+            if v > limite_logico:
+                return round(v / 100.0, 2)
+            return round(v, 2)
+
+        # Limites absurdos para forçar a correção (Comprimento > 40m, Larg/Alt > 10m)
+        comp_real = arrumar_medida(ultimo_evento.dim_comprimento, 40)
+        larg_real = arrumar_medida(ultimo_evento.dim_largura, 10)
+        alt_real = arrumar_medida(ultimo_evento.dim_altura, 10)
+
+        print(f"Memória ativada! Tara: {ultimo_evento.peso_tara}kg | Dim: {comp_real}m x {larg_real}m x {alt_real}m")
+        
         return {
             "peso_tara": ultimo_evento.peso_tara,
-            "dim_comprimento": ultimo_evento.dim_comprimento,
-            "dim_largura": ultimo_evento.dim_largura,
-            "dim_altura": ultimo_evento.dim_altura
+            "dim_comprimento": comp_real,
+            "dim_largura": larg_real,
+            "dim_altura": alt_real
         }
         
     print("Nenhum histórico com tara foi encontrado para esta placa.")
