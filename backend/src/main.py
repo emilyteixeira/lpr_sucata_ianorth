@@ -568,8 +568,9 @@ def proxy_video_stream(garra_id: int):
             "-rtsp_transport", "tcp", 
             "-i", rtsp_url,
             "-f", "mpjpeg",
-            "-q:v", "3",
-            "-r", "15",             
+            "-vf", "scale=-1:720"
+            "-q:v", "5",
+            "-r", "10",             
             "-an",                    
             "-"                       
         ]
