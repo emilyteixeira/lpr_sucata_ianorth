@@ -571,8 +571,8 @@ def proxy_video_stream(garra_id: int):
             #"-flags", "low_delay", # Força o processamento em tempo real.
             "-rtsp_transport", "tcp", 
             "-i", rtsp_url,
-            "-vf", "scale=-1:720"
-            "-c:v", "mjpeg"
+            "-vf", "scale=-2:720",
+            "-c:v", "mjpeg",
             "-f", "mpjpeg",
             "-q:v", "5",
             "-r", "10",             
