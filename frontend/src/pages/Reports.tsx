@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 // @ts-ignore
-import { Responsive, WidthProvider } from 'react-react-grid-layout';
+import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
