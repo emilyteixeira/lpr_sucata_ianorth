@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { TicketDetails } from './pages/TicketDetails';
 import { Settings } from './pages/Settings';
 import { History } from './pages/History';
+import { Reports } from './pages/Reports';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
 
             <Route path="/history" element={<History />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="relatorios" element={<Reports />}/>
             
             <Route path="/ticket/:id" element={<TicketDetails />} />
           </Routes>
