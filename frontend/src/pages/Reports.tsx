@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
 // @ts-ignore
-import GridLayout from 'react-grid-layout';
+import Responsive from 'react-grid-layout/build/ResponsiveReactGridLayout';
+// @ts-ignore
+import WidthProvider from 'react-grid-layout/build/components/WidthProvider';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -10,8 +12,8 @@ import { TrendingUp, Scale, AlertTriangle, Filter, GripHorizontal, BarChart3 } f
 import { API_BASE_URL } from '../config';
 import type { EventoLPR } from '../types';
 
-const RGL = GridLayout as any;
-const ResponsiveGridLayout = RGL.WidthProvider(RGL.Responsive);
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
 
 const CORES = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
@@ -40,7 +42,7 @@ export function Reports() {
             .catch(err => console.error("Erro ao carregar BI:", err));
     }, []);
 
-    if (loading) return <div className="p-10 text-center text-slate-500 font-bold animate-pulse flex flex-col items-center justify-center h-full"><BarChart3 size={40} className="mb-4 text-blue-500"/> Carregando Motor de BI...</div>;
+    if (loading) return <div className="p-10 text-center text-slate-500 font-bold animate-pulse flex flex-col items-center justify-center h-full"><BarChart3 size={40} className="mb-4 text-blue-500"/> Carregando BI...</div>;
 
     const hoje = new Date();
     const dataCorte = new Date();
