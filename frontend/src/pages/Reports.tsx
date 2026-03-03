@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
 // @ts-ignore
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -9,7 +10,9 @@ import { TrendingUp, Scale, AlertTriangle, Filter, GripHorizontal, BarChart3 } f
 import { API_BASE_URL } from '../config';
 import type { EventoLPR } from '../types';
 
-const ResponsiveGridLayout = WidthProvider(Responsive);
+const RGL = GridLayout as any;
+const ResponsiveGridLayout = RGL.WidthProvider(RGL.Responsive);
+
 const CORES = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
 export function Reports() {
