@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 // @ts-ignore
-import Responsive from 'react-grid-layout/build/ResponsiveReactGridLayout';
-// @ts-ignore
-import WidthProvider from 'react-grid-layout/build/components/WidthProvider';
+import { Responsive, WidthProvider } from 'react-react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -12,8 +10,8 @@ import { TrendingUp, Scale, AlertTriangle, Filter, GripHorizontal, BarChart3 } f
 import { API_BASE_URL } from '../config';
 import type { EventoLPR } from '../types';
 
+// @ts-ignore
 const ResponsiveGridLayout = WidthProvider(Responsive);
-
 
 const CORES = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
@@ -22,6 +20,7 @@ export function Reports() {
     const [loading, setLoading] = useState(true);
     const [filtroDias, setFiltroDias] = useState(7);
 
+    // Layout Padrão Inicial
     const defaultLayout = [
         { i: 'kpi-peso', x: 0, y: 0, w: 4, h: 1, minW: 2, minH: 1 },
         { i: 'kpi-viagens', x: 4, y: 0, w: 4, h: 1, minW: 2, minH: 1 },
@@ -136,7 +135,6 @@ export function Reports() {
                         <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white mt-1">{pctImpurezaGeral.toFixed(1)} <span className="text-sm font-normal">%</span></h2>
                     </div>
 
-                    {/* GRÁFICO DE LINHA */}
                     <div key="chart-curva" className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative group">
                         <div className="flex justify-between items-center mb-4 cursor-move drag-handle">
                             <h3 className="font-bold text-sm text-slate-500 uppercase">Volume Diário (Toneladas)</h3>
@@ -155,7 +153,6 @@ export function Reports() {
                         </div>
                     </div>
 
-                    {/* GRÁFICO DE PIZZA */}
                     <div key="chart-pizza" className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative group">
                         <div className="flex justify-between items-center mb-2 cursor-move drag-handle">
                             <h3 className="font-bold text-sm text-slate-500 uppercase">Top 5 Materiais Recebidos</h3>
@@ -176,7 +173,6 @@ export function Reports() {
                         </div>
                     </div>
 
-                    {/* GRÁFICO DE BARRAS */}
                     <div key="chart-barras" className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative group">
                         <div className="flex justify-between items-center mb-4 cursor-move drag-handle">
                             <h3 className="font-bold text-sm text-slate-500 uppercase">Top 5 Fornecedores (Toneladas)</h3>
