@@ -13,12 +13,14 @@ import type { EventoLPR } from '../types';
 // @ts-ignore
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-const CORES = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
+const CORES = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#f97316'];
+const LAYOUT_STORAGE_KEY = 'ianorth_bi_layout_v1';
 
 export function Reports() {
     const [eventos, setEventos] = useState<EventoLPR[]>([]);
     const [loading, setLoading] = useState(true);
     const [filtroDias, setFiltroDias] = useState(7);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     // Layout Padrão Inicial
     const defaultLayout = [
@@ -27,8 +29,20 @@ export function Reports() {
         { i: 'kpi-impureza', x: 8, y: 0, w: 4, h: 1, minW: 2, minH: 1 },
         { i: 'chart-curva', x: 0, y: 1, w: 8, h: 3, minW: 4, minH: 2 },
         { i: 'chart-pizza', x: 8, y: 1, w: 4, h: 3, minW: 3, minH: 2 },
-        { i: 'chart-barras', x: 0, y: 4, w: 12, h: 3, minW: 6, minH: 2 }
+        { i: 'chart-barras', x: 0, y: 4, w: 6, h: 3, minW: 4, minH: 2 },
+        { i: 'chart-veiculos', x: 6, y: 4, w: 6, h: 3, minW: 4, minH: 2 },
+        { i: 'chart-divergencia', x: 0, y: 7, w: 12, h: 3, minW: 6, minH: 2 },
     ];
+
+    const [currentLaouyt, setCurrentLayout] = useState(defaultLayout);
+
+    useEffect(() => {
+        const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
+        if (savedLayout) {
+            try { setCurrentLayout(JSON.parse(savedLayout));}
+            catch (e) {}
+        }
+    }, []);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/eventos/?limit=1000`)
