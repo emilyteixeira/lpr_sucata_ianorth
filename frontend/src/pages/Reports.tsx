@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 
 // @ts-ignore
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import Responsive from 'react-grid-layout/build/ResponsiveReactGridLayout';
+// @ts-ignore
+import WidthProvider from 'react-grid-layout/build/components/WidthProvider';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -11,7 +14,7 @@ import {
 } from 'recharts';
 import { 
     TrendingUp, Scale, AlertTriangle, Filter, GripHorizontal, 
-    BarChart3, Edit3, Save, Lock, Truck
+    BarChart3, Edit3, Save, Lock, Truck, Search
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import type { EventoLPR } from '../types';
@@ -25,10 +28,11 @@ const LAYOUT_STORAGE_KEY = 'ianorth_bi_layout_v1';
 export function Reports() {
     const [eventos, setEventos] = useState<EventoLPR[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filtroDias, setFiltroDias] = useState(30); // Começa com visão mensal
-    
+    const [filtroDias, setFiltroDias] = useState(30);
     const [isEditMode, setIsEditMode] = useState(false);
     
+    const navigate = useNavigate(); 
+
     const defaultLayout = [
         { i: 'kpi-peso', x: 0, y: 0, w: 4, h: 1, minW: 3, minH: 1 },
         { i: 'kpi-viagens', x: 4, y: 0, w: 4, h: 1, minW: 3, minH: 1 },
@@ -61,15 +65,26 @@ export function Reports() {
     }, []);
 
     const toggleEditMode = () => {
-        if (isEditMode) {
-            localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(currentLayout));
-        }
+        if (isEditMode) localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(currentLayout));
         setIsEditMode(!isEditMode);
     };
 
-    const handleLayoutChange = (layout: any) => {
-        setCurrentLayout(layout);
+    const handleDrillDown = (termo?: string) => {
+        if (isEditMode) return;
+        
+        if (termo) {
+            navigate(`/history?termo=${encodeURIComponent(termo)}`);
+        } else {
+            navigate('/history?status=Finalizado');
+        }
     };
+
+    const handleChartClick = (data: any, chaveBusca: string) => {
+        if (isEditMode) return;
+        const termoBusca = data[chaveBusca] || data.payload?.[chaveBusca];
+        if (termoBusca) handleDrillDown(termoBusca);
+    };
+
 
     if (loading) return <div className="p-10 text-center text-slate-500 font-bold animate-pulse flex flex-col items-center justify-center h-full"><BarChart3 size={40} className="mb-4 text-blue-500"/> Carregando Nuvem de Dados...</div>;
 
@@ -113,7 +128,7 @@ export function Reports() {
     const dadosFornecedores = Object.values(volumePorFornecedor).sort((a: any, b: any) => b.tonelagem - a.tonelagem).slice(0, 5);
 
     const viagensPorVeiculo = eventosFiltrados.reduce((acc: any, curr) => {
-        const tipo = curr.placa_veiculo || 'Outros';
+        const tipo = curr.tipo_veiculo || 'Outros';
         if (!acc[tipo]) acc[tipo] = { name: tipo, value: 0 };
         acc[tipo].value += 1;
         return acc;
@@ -128,8 +143,10 @@ export function Reports() {
         return acc;
     }, {});
     const dadosDivergencia = Object.values(divergenciaPorFornecedor)
-        .filter((d:any) => d.nf > 0) // Mostra apenas quem enviou NF
+        .filter((d:any) => d.nf > 0) 
         .sort((a: any, b: any) => b.balanca - a.balanca).slice(0, 10);
+
+    const cursorStyle = isEditMode ? 'default' : 'pointer';
 
     return (
         <div className="space-y-6 animate-fade-in pb-20 max-w-[1600px] mx-auto pt-2">
@@ -141,7 +158,6 @@ export function Reports() {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5">
                         <Filter size={16} className="text-slate-400" />
                         <select 
@@ -173,7 +189,7 @@ export function Reports() {
             {isEditMode && (
                 <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
                     <GripHorizontal size={16}/> 
-                    <strong>Modo de Edição Ativo:</strong> Arraste os gráficos pelo título ou redimensione pelos cantos. Clique em Salvar ao finalizar.
+                    <strong>Modo de Edição Ativo:</strong> Arraste os gráficos ou redimensione pelos cantos. Os cliques interativos estão temporariamente desativados.
                 </div>
             )}
 
@@ -185,27 +201,44 @@ export function Reports() {
                     cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
                     rowHeight={120}
                     draggableHandle=".drag-handle"
-                    onLayoutChange={handleLayoutChange}
+                    onLayoutChange={setCurrentLayout}
                     isDraggable={isEditMode}
                     isResizable={isEditMode}
                     margin={[20, 20]}
                 >
                     
-                    {/* KPI 1 */}
-                    <div key="kpi-peso" className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-blue-500 flex flex-col justify-center relative group">
-                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> : <Lock className="absolute top-2 right-2 text-slate-200 dark:text-slate-700" size={14}/>}
+                    <div key="kpi-peso" 
+                        onClick={() => handleDrillDown()}
+                        className={`bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-blue-500 flex flex-col justify-center relative group transition-all
+                        ${!isEditMode ? 'cursor-pointer hover:ring-2 ring-blue-500/50 hover:shadow-md' : ''}`}>
+                        
+                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> 
+                                    : <Search className="absolute top-2 right-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" size={14}/>}
+                        
                         <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><TrendingUp size={14}/> Volume Recebido</p>
                         <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white mt-1">{(totalPeso / 1000).toLocaleString(undefined, {maximumFractionDigits: 1})} <span className="text-sm font-normal">Ton</span></h2>
                     </div>
 
-                    <div key="kpi-viagens" className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-green-500 flex flex-col justify-center relative group">
-                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> : <Lock className="absolute top-2 right-2 text-slate-200 dark:text-slate-700" size={14}/>}
+                    <div key="kpi-viagens" 
+                        onClick={() => handleDrillDown()}
+                        className={`bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-green-500 flex flex-col justify-center relative group transition-all
+                        ${!isEditMode ? 'cursor-pointer hover:ring-2 ring-green-500/50 hover:shadow-md' : ''}`}>
+                        
+                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> 
+                                    : <Search className="absolute top-2 right-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" size={14}/>}
+                        
                         <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Scale size={14}/> Viagens Finalizadas</p>
                         <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white mt-1">{eventosFiltrados.length} <span className="text-sm font-normal">Caminhões</span></h2>
                     </div>
 
-                    <div key="kpi-impureza" className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-red-500 flex flex-col justify-center relative group">
-                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> : <Lock className="absolute top-2 right-2 text-slate-200 dark:text-slate-700" size={14}/>}
+                    <div key="kpi-impureza" 
+                        onClick={() => handleDrillDown()}
+                        className={`bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm border-l-4 border-l-red-500 flex flex-col justify-center relative group transition-all
+                        ${!isEditMode ? 'cursor-pointer hover:ring-2 ring-red-500/50 hover:shadow-md' : ''}`}>
+                        
+                        {isEditMode ? <GripHorizontal className="drag-handle absolute top-2 right-2 text-slate-400 cursor-grab active:cursor-grabbing" size={16}/> 
+                                    : <Search className="absolute top-2 right-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" size={14}/>}
+                        
                         <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><AlertTriangle size={14}/> Média de Impureza</p>
                         <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white mt-1">{pctImpurezaGeral.toFixed(1)} <span className="text-sm font-normal">%</span></h2>
                     </div>
@@ -222,12 +255,15 @@ export function Reports() {
                                     <XAxis dataKey="data" tick={{fontSize: 11, fill: '#64748b'}} tickMargin={10} />
                                     <YAxis tick={{fontSize: 11, fill: '#64748b'}} />
                                     <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
-                                    <Line type="monotone" dataKey="peso" name="Toneladas" stroke="#2563eb" strokeWidth={3} dot={{r: 3, fill: '#2563eb'}} activeDot={{r: 6}} />
+                                    <Line type="monotone" dataKey="peso" name="Toneladas" stroke="#2563eb" strokeWidth={3} dot={{r: 3, fill: '#2563eb', cursor: cursorStyle}} activeDot={{r: 6}} 
+                                        onClick={(data) => handleChartClick(data, 'data')} 
+                                    />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
+                    {/* MATERIAIS */}
                     <div key="chart-pizza" className={`bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative ${isEditMode ? 'ring-2 ring-blue-500/30' : ''}`}>
                         <div className={`flex justify-between items-center mb-2 ${isEditMode ? 'cursor-move drag-handle bg-slate-50 dark:bg-slate-900 -mx-6 -mt-6 p-4 rounded-t-xl border-b dark:border-slate-700' : ''}`}>
                             <h3 className="font-bold text-sm text-slate-500 uppercase">Top 5 Materiais</h3>
@@ -236,8 +272,9 @@ export function Reports() {
                         <div className="flex-1 min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={dadosPizza} cx="50%" cy="45%" innerRadius="50%" outerRadius="80%" paddingAngle={5} dataKey="value" nameKey="name">
-                                        {dadosPizza.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />)}
+                                    <Pie data={dadosPizza} cx="50%" cy="45%" innerRadius="50%" outerRadius="80%" paddingAngle={5} dataKey="value" nameKey="name" 
+                                        onClick={(data) => handleChartClick(data, 'name')} style={{ cursor: cursorStyle }}>
+                                        {dadosPizza.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} className={!isEditMode ? 'hover:opacity-80 transition-opacity' : ''}/>)}
                                     </Pie>
                                     <RechartsTooltip formatter={(value: number) => `${value.toFixed(1)} Ton`} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '11px', color: '#64748b'}} />
@@ -246,6 +283,7 @@ export function Reports() {
                         </div>
                     </div>
 
+                    {/* GFORNECEDORES */}
                     <div key="chart-barras" className={`bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative ${isEditMode ? 'ring-2 ring-blue-500/30' : ''}`}>
                         <div className={`flex justify-between items-center mb-4 ${isEditMode ? 'cursor-move drag-handle bg-slate-50 dark:bg-slate-900 -mx-6 -mt-6 p-4 rounded-t-xl border-b dark:border-slate-700' : ''}`}>
                             <h3 className="font-bold text-sm text-slate-500 uppercase">Top 5 Fornecedores (Ton)</h3>
@@ -258,14 +296,16 @@ export function Reports() {
                                     <XAxis type="number" tick={{fontSize: 11, fill: '#64748b'}} />
                                     <YAxis dataKey="nome" type="category" width={150} tick={{fontSize: 11, fill: '#64748b'}} />
                                     <RechartsTooltip cursor={{fill: 'rgba(100, 116, 139, 0.1)'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
-                                    <Bar dataKey="tonelagem" name="Toneladas" fill="#16a34a" radius={[0, 4, 4, 0]} barSize={25}>
-                                        {dadosFornecedores.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />)}
+                                    <Bar dataKey="tonelagem" name="Toneladas" fill="#16a34a" radius={[0, 4, 4, 0]} barSize={25} 
+                                        onClick={(data) => handleChartClick(data, 'nome')} style={{ cursor: cursorStyle }}>
+                                        {dadosFornecedores.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} className={!isEditMode ? 'hover:opacity-80 transition-opacity' : ''}/>)}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
+                    {/* TIPO DE VEÍCULOS */}
                     <div key="chart-veiculos" className={`bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative ${isEditMode ? 'ring-2 ring-blue-500/30' : ''}`}>
                         <div className={`flex justify-between items-center mb-4 ${isEditMode ? 'cursor-move drag-handle bg-slate-50 dark:bg-slate-900 -mx-6 -mt-6 p-4 rounded-t-xl border-b dark:border-slate-700' : ''}`}>
                             <h3 className="font-bold text-sm text-slate-500 uppercase flex items-center gap-2"><Truck size={14}/> Perfil de Frota</h3>
@@ -278,14 +318,16 @@ export function Reports() {
                                     <XAxis dataKey="name" tick={{fontSize: 11, fill: '#64748b'}} />
                                     <YAxis tick={{fontSize: 11, fill: '#64748b'}} />
                                     <RechartsTooltip cursor={{fill: 'rgba(100, 116, 139, 0.1)'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
-                                    <Bar dataKey="value" name="Viagens" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={40}>
-                                        {dadosVeiculos.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />)}
+                                    <Bar dataKey="value" name="Viagens" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={40}
+                                        onClick={(data) => handleChartClick(data, 'name')} style={{ cursor: cursorStyle }}>
+                                        {dadosVeiculos.map((entry, index) => <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} className={!isEditMode ? 'hover:opacity-80 transition-opacity' : ''} />)}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
+                    {/* DIVERGÊNCIA */}
                     <div key="chart-divergencia" className={`bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col relative ${isEditMode ? 'ring-2 ring-blue-500/30' : ''}`}>
                         <div className={`flex justify-between items-center mb-4 ${isEditMode ? 'cursor-move drag-handle bg-slate-50 dark:bg-slate-900 -mx-6 -mt-6 p-4 rounded-t-xl border-b dark:border-slate-700' : ''}`}>
                             <h3 className="font-bold text-sm text-slate-500 uppercase flex items-center gap-2"><AlertTriangle size={14}/> Divergência: Peso N.F. vs Balança</h3>
@@ -299,8 +341,8 @@ export function Reports() {
                                     <YAxis tick={{fontSize: 11, fill: '#64748b'}} />
                                     <RechartsTooltip cursor={{fill: 'rgba(100, 116, 139, 0.1)'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff'}} />
                                     <Legend verticalAlign="top" height={36} wrapperStyle={{fontSize: '12px'}}/>
-                                    <Bar dataKey="nf" name="Peso Nota Fiscal (Ton)" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={20} />
-                                    <Bar dataKey="balanca" name="Peso Balança (Ton)" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
+                                    <Bar dataKey="nf" name="Peso Nota Fiscal (Ton)" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={20} onClick={(data) => handleChartClick(data, 'nome')} style={{ cursor: cursorStyle }} />
+                                    <Bar dataKey="balanca" name="Peso Balança (Ton)" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} onClick={(data) => handleChartClick(data, 'nome')} style={{ cursor: cursorStyle }} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
