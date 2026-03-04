@@ -113,7 +113,7 @@ export function Reports() {
     const dadosFornecedores = Object.values(volumePorFornecedor).sort((a: any, b: any) => b.tonelagem - a.tonelagem).slice(0, 5);
 
     const viagensPorVeiculo = eventosFiltrados.reduce((acc: any, curr) => {
-        const tipo = curr.tipo_veiculo || 'Outros';
+        const tipo = curr.placa_veiculo || 'Outros';
         if (!acc[tipo]) acc[tipo] = { name: tipo, value: 0 };
         acc[tipo].value += 1;
         return acc;
