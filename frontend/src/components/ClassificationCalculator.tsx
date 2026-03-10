@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Calculator, Scale, Plus, Trash2, FileWarning, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Calculator, Scale, Plus, Trash2, FileWarning, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import { TruckVisualizer } from './TruckVisualizer';
 import type { EventoLPR } from '../types';
+import { gerarPDFTicket } from '../../utils/pdfGenerator';
 
 const DENSITY_RANGES: Record<string, [number, number]> = {
   "SUCATA MISTA": [0.2, 0.6],
@@ -33,6 +34,7 @@ interface MaterialItem {
 
 export function ClassificationCalculator({ formData, setFormData, ticket, isFinalizado = false }: Props) {
     const [materiais, setMateriais] = useState<MaterialItem[]>([]);
+    const [gerandoPdf, setGerandoPdf] = useState(false); // <-- Estado para o botão de PDF
 
     useEffect(() => {
         if (ticket?.tipo_sucata && materiais.length === 0) {
@@ -126,7 +128,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
         if (mediaImpurezaFinal > 3.0) {
             statusTexto = `ALERTA R.I.M. (${mediaImpurezaFinal.toFixed(1)}%)`;
             statusCor = "text-red-700 dark:text-red-100";
-            statusBg = "bg-red-100 dark:bg-red-900 border-red-500 animate-pulse";
+            statusBg = "bg-red-100 dark:bg-red-900 border-red-500";
             icone = <FileWarning size={14}/>;
         } else if (densidade < minFinal) {
             statusTexto = "ABAIXO da FAIXA";
@@ -152,7 +154,6 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                 <h3 className="font-bold flex items-center gap-2 dark:text-white">
                     <Calculator size={20} className="text-green-600"/> Classificação & Cubagem
                 </h3>
-                {/* ETIQUETA DE SEGURANÇA */}
                 {isFinalizado && (
                     <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded">
                         SOMENTE LEITURA
@@ -279,9 +280,31 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                 <div className="lg:col-span-3 flex flex-col justify-between h-full">
                     <div className="text-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Status da Carga</span>
-                        <div className={`mt-2 w-full py-2 px-3 rounded border flex items-center justify-center gap-2 font-bold text-xs shadow-sm transition-all duration-300 ${statusBg} ${statusCor}`}>
-                            {icone} {statusTexto}
-                        </div>
+                        
+                        {totalPesoInformado > 0 && vol > 0 && mediaImpurezaFinal > 3.0 ? (
+                            <button 
+                                onClick={async () => {
+                                    setGerandoPdf(true);
+                                    await gerarPDFTicket(formData);
+                                    setGerandoPdf(false);
+                                }}
+                                disabled={gerandoPdf}
+                                title="Baixar dossiê R.I.M"
+                                className={`mt-2 w-full py-2 px-2 rounded border flex flex-col items-center justify-center gap-1 shadow-sm transition-all duration-300 bg-red-100 hover:bg-red-200 dark:bg-red-900/80 dark:hover:bg-red-800 border-red-500 text-red-700 dark:text-red-100 ${gerandoPdf ? 'opacity-50 cursor-not-allowed' : 'animate-pulse hover:scale-[1.02]'}`}
+                            >
+                                <span className="font-bold text-xs flex items-center gap-1">
+                                    <FileWarning size={14}/> {statusTexto}
+                                </span>
+                                <div className="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                    <Download size={10}/> {gerandoPdf ? 'A Gerar...' : 'Baixar PDF (R.I.M)'}
+                                </div>
+                            </button>
+                        ) : (
+                            <div className={`mt-2 w-full py-2 px-3 rounded border flex items-center justify-center gap-2 font-bold text-xs shadow-sm transition-all duration-300 ${statusBg} ${statusCor}`}>
+                                {icone} {statusTexto}
+                            </div>
+                        )}
+
                         <div className="mt-4 flex justify-between items-end border-b border-slate-100 dark:border-slate-700 pb-2">
                             <span className="text-[10px] text-slate-400">Densidade Global</span>
                             <span className="text-xl font-mono font-bold text-slate-700 dark:text-white">{densidade.toFixed(3)}</span>
@@ -301,7 +324,6 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                 </div>
             </div>
 
-            {/* CARRETA  2D*/}
             <div className="px-6 pb-6 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 pt-4">
                 <TruckVisualizer materiais={materiais} />
             </div>

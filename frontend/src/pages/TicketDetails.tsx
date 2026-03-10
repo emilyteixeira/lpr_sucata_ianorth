@@ -9,8 +9,7 @@ import type { EventoLPR } from '../types';
 import { API_BASE_URL, getMediaUrl } from '../config'; 
 import { ClassificationCalculator } from '../components/ClassificationCalculator';
 import { MediaModal } from '../components/dashboard/MediaModal';
-import { gerarPDFTicket }
-from '../../utils/pdfGenerator';
+import { gerarPDFTicket } from '../../utils/pdfGenerator';
 
 interface GarraConfig { id: number; nome: string; }
 
