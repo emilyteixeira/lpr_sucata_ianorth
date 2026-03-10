@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { EventoLPR } from '../src/types.ts';
+import { getMediaUrl } from '../src/config';
+
 
 const AZUL_ESCURO = [30, 58, 138];  // #1e3a8a
 const CINZA_BORDA = [209, 213, 219]; // #d1d5db
@@ -24,7 +26,7 @@ export const gerarPDFTicket = async (ticket: Partial<EventoLPR>) => {
 
     try {
         const logoSino = await loadImage('/sinobras-logo.png'); 
-        doc.addImage(logoSino, 'PNG', 14, y - 5, 40, 15); 
+        doc.addImage(logoSino, 'PNG', 12, y - 5, 40, 15); 
     } catch (e) {
         console.warn("Logo Sinobras não encontrada em /sinobras-logo.png");
     }
@@ -32,7 +34,7 @@ export const gerarPDFTicket = async (ticket: Partial<EventoLPR>) => {
     doc.setTextColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("RELATÓRIO DE IMPUREZA E PESAGEM", width / 2, y + 2, { align: 'center' });
+    doc.text("RELATÓRIO DE IMPUREZA DE MATERIAIS (R.I.M)", width / 2, y + 2, { align: 'center' });
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
@@ -66,34 +68,79 @@ export const gerarPDFTicket = async (ticket: Partial<EventoLPR>) => {
         return currentY + 12;
     };
 
-    y = drawSectionHeader("1. DADOS DO RECEBIMENTO / FORNECEDOR", y);
+
+    let startYSec1 = drawSectionHeader(" DADOS DO RECEBIMENTO / FORNECEDOR", y);
+    y = startYSec1;
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
     
-    doc.setFont("helvetica", "bold"); doc.text("PLACA:", 16, y); 
-    doc.setFont("helvetica", "normal"); doc.text(ticket.placa_veiculo || "---", 35, y);
-    doc.setFont("helvetica", "bold"); doc.text("FORNECEDOR:", 100, y); 
-    doc.setFont("helvetica", "normal"); doc.text((ticket.fornecedor_nome || "---").substring(0, 45), 125, y);
-    y += 6;
+    let leftColX = 16;
+    let centerColX = 75;
+    let rightImgX = width - 14 - 55; // 55 é a largura da foto LPR
+    let rightImgW = 55;
+    let rightImgH = 31; // Proporção HD 16:9
 
-    doc.setFont("helvetica", "bold"); doc.text("VEÍCULO:", 16, y); 
-    doc.setFont("helvetica", "normal"); doc.text(ticket.tipo_veiculo || "---", 35, y);
-    doc.setFont("helvetica", "bold"); doc.text("PRODUTO:", 100, y); 
-    doc.setFont("helvetica", "normal"); doc.text((ticket.produto_declarado || "---").substring(0, 45), 125, y);
-    y += 6;
 
-    doc.setFont("helvetica", "bold"); doc.text("MOTORISTA:", 16, y); 
-    doc.setFont("helvetica", "normal"); doc.text((ticket.motorista || "---").substring(0, 30), 40, y);
-    doc.setFont("helvetica", "bold"); doc.text("NOTA FISCAL:", 100, y); 
-    doc.setFont("helvetica", "normal"); doc.text(ticket.nota_fiscal || "---", 125, y);
-    y += 6;
-
-    doc.setFont("helvetica", "bold"); doc.text("MATERIAL CLASSIFICADO:", 16, y); 
-    doc.setFont("helvetica", "normal"); doc.text(ticket.tipo_sucata || "Pendente", 62, y);
+    doc.setFont("helvetica", "bold"); doc.text("PLACA:", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text(ticket.placa_veiculo || "---", leftColX + 15, y);
     
-    y += 12;
+    doc.setFont("helvetica", "bold"); doc.text("FORNECEDOR:", centerColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text((ticket.fornecedor_nome || "---").substring(0, 25), centerColX + 26, y);
+    y += 6;
 
-    y = drawSectionHeader("2. AUDITORIA DE PESAGEM E DESCONTOS", y);
+    doc.setFont("helvetica", "bold"); doc.text("VEÍCULO:", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text(ticket.tipo_veiculo || "---", leftColX + 18, y);
+
+    doc.setFont("helvetica", "bold"); doc.text("PRODUTO:", centerColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text((ticket.produto_declarado || "---").substring(0, 25), centerColX + 20, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold"); doc.text("MOTORISTA:", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text((ticket.motorista || "---").substring(0, 20), leftColX + 23, y);
+
+    doc.setFont("helvetica", "bold"); doc.text("MATERIAL:", centerColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text((ticket.tipo_sucata || "Pendente").substring(0, 25), centerColX + 20, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold"); doc.text("NOTA FISCAL:", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text(ticket.nota_fiscal || "---", leftColX + 25, y);
+    y += 6;
+
+    // Datas e Horários
+    doc.setTextColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
+    doc.setFont("helvetica", "bold"); doc.text("ENTRADA (Balança):", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text(ticket.data_entrada_sinobras || "---", leftColX + 34, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold"); doc.text("REGISTRO (LPR):", leftColX, y); 
+    doc.setFont("helvetica", "normal"); doc.text(ticket.timestamp_registro || "---", leftColX + 30, y);
+    doc.setTextColor(0, 0, 0);
+
+    if (ticket.snapshot_url) {
+        try {
+            const imgLpr = await loadImage(getMediaUrl(ticket.snapshot_url));
+            doc.addImage(imgLpr, 'JPEG', rightImgX, startYSec1 - 3, rightImgW, rightImgH);
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.rect(rightImgX, startYSec1 - 3, rightImgW, rightImgH);
+            
+            doc.setFillColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
+            doc.rect(rightImgX, startYSec1 - 3 + rightImgH, rightImgW, 4, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            doc.text("FOTO LPR - ENTRADA DO VEÍCULO", rightImgX + (rightImgW / 2), startYSec1 - 3 + rightImgH + 3, { align: 'center' });
+        } catch(e) {
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(rightImgX, startYSec1 - 3, rightImgW, rightImgH);
+        }
+    }
+
+    // Calcula o limite inferior se a foto ou o texto for maior)
+    y = Math.max(y + 8, startYSec1 + rightImgH + 10);
+
+
+    y = drawSectionHeader(" AUDITORIA DE PESAGEM E DESCONTOS", y);
     
     const pesoBruto = Number(ticket.peso_balanca) || 0;
     const pesoTara = Number(ticket.peso_tara) || 0;
@@ -131,7 +178,7 @@ export const gerarPDFTicket = async (ticket: Partial<EventoLPR>) => {
 
     y = (doc as any).lastAutoTable.finalY + 12;
 
-    y = drawSectionHeader("3. OBSERVAÇÕES DA CLASSIFICAÇÃO", y);
+    y = drawSectionHeader(" OBSERVAÇÕES DA CLASSIFICAÇÃO", y);
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -141,30 +188,63 @@ export const gerarPDFTicket = async (ticket: Partial<EventoLPR>) => {
     doc.text(splitObs, 16, y);
     y += (splitObs.length * 4) + 25;
 
-    if (y > height - 40) {
-        doc.addPage();
-        y = 30;
+
+    if (ticket.fotos_avaria) {
+        const fotos = ticket.fotos_avaria.split(',').filter(f => f.trim() !== '');
+        
+        if (fotos.length > 0) {
+            if (y > height - 40) { doc.addPage(); y = 20; }
+            
+            y = drawSectionHeader(` REGISTRO FOTOGRÁFICO DAS EVIDÊNCIAS (${fotos.length})`, y);
+            
+            let x = 14;
+            const colWidth = 85; 
+            const rowHeight = 48; 
+            let count = 0;
+
+            for (const foto of fotos) {
+                try {
+                    const imgUrl = getMediaUrl(foto);
+                    const img = await loadImage(imgUrl);
+
+                    if (count % 2 === 0 && count > 0) {
+                        y += rowHeight + 8;
+                        x = 14;
+                        if (y + rowHeight > height - 30) {
+                            doc.addPage();
+                            y = 20;
+                        }
+                    }
+
+                    doc.addImage(img, 'JPEG', x, y, colWidth, rowHeight);
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(x, y, colWidth, rowHeight);
+
+                    x += colWidth + 12; 
+                    count++;
+                } catch (e) {
+                    console.warn(`Erro ao carregar foto: ${foto}`);
+                }
+            }
+            if (count > 0) y += rowHeight + 20;
+        }
     }
 
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.5);
-    doc.line(25, y, 85, y);
-    doc.line(125, y, 185, y);
-    
+   if (y > height - 40) { doc.addPage(); y = 30; }
+    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.5);
+    doc.line(25, y, 85, y); doc.line(125, y, 185, y);
     doc.setFontSize(8);
     doc.text("Responsável Técnico / Classificador", 55, y + 4, { align: 'center' });
     doc.text("Motorista / Representante do Fornecedor", 155, y + 4, { align: 'center' });
 
+    // RODAPÉ
     try {
         const logoIa = await loadImage('/IanorthLog.png'); 
-        doc.addImage(logoIa, 'PNG', 14, height - 15, 30, 5); // Logo pequena no rodapé
-    } catch (e) {
-        console.warn("Logo IANorth não encontrada em /IanorthLog.png");
-    }
+        doc.addImage(logoIa, 'PNG', 14, height - 15, 30, 5); 
+    } catch (e) {}
     
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(7); doc.setTextColor(150, 150, 150);
     doc.text("Desenvolvido por IANorth - Tecnologia Eletromecânica", width - 14, height - 11, { align: 'right' });
 
     doc.save(`Ticket_${ticket.ticket_id || ticket.placa_veiculo}_RIM.pdf`);
-};
+}; 
