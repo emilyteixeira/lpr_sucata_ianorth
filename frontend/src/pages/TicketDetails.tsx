@@ -9,6 +9,8 @@ import type { EventoLPR } from '../types';
 import { API_BASE_URL, getMediaUrl } from '../config'; 
 import { ClassificationCalculator } from '../components/ClassificationCalculator';
 import { MediaModal } from '../components/dashboard/MediaModal';
+import { gerarPDFTicket }
+from '../../utils/pdfGenerator';
 
 interface GarraConfig { id: number; nome: string; }
 
@@ -25,6 +27,8 @@ export function TicketDetails() {
     const [cameraAtivaId, setCameraAtivaId] = useState<number | null>(null);
     const [capturando, setCapturando] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    const [gerandoPdf, setGerandoPdf] = useState(false)
 
     useEffect(() => { carregarDados(); carregarGarras(); }, [id]);
 
@@ -186,9 +190,20 @@ export function TicketDetails() {
                     <button onClick={handleDownloadFotos} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded font-bold hover:bg-slate-200 transition text-sm">
                         <Download size={16} /> Baixar Evidências
                     </button>
-                    <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 transition text-sm shadow-md">
-                        <Printer size={16} /> Imprimir Relatório
+
+
+                    <button 
+                        onClick={async () => {
+                            setGerandoPdf(true);
+                            await gerarPDFTicket(formData);
+                            setGerandoPdf(false);
+                        }} 
+                        disabled={gerandoPdf}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 transition text-sm shadow-md disabled:opacity-50"
+                    >
+                        <Printer size={16} /> {gerandoPdf ? 'Gerando...' : 'Exportar R.I.M (PDF)'}
                     </button>
+
 
                     {!isFinalizado && (
                     <button 
