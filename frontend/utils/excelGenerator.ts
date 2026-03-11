@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { EventoLPR } from '../types';
+import type { EventoLPR } from '../src/types';
 
 export const exportarParaExcel = (eventos: EventoLPR[]) => {
     const dadosFormatados = eventos.map(evento => {
