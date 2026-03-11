@@ -19,6 +19,8 @@ export function History() {
 
   const [mediaModal, setMediaModal] = useState<{url: string, type: 'image' | 'video'} | null>(null);
 
+   const [exportando, setExportando] = useState(false);
+
   const fetchHistorico = async (termo = '') => {
     setLoading(true);
     try {
@@ -59,6 +61,18 @@ export function History() {
     return matchData && matchStatus;
   });
 
+    const handleExportarExcel = async () => {
+        setExportando(true);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        try {
+            exportarParaExcel(eventosExibidos);
+        } catch(e) {
+            console.error("Erro no Excel:", e);
+        } finally {
+            setExportando(false);
+        }
+    }
+
   const handleViewImage = (url: string) => setMediaModal({ url, type: 'image' });
   const handleViewVideo = (url: string) => setMediaModal({ url, type: 'video' });
 
@@ -76,11 +90,15 @@ export function History() {
         
         <div className="flex gap-2">
 
-            <button 
-                onClick={() => exportarParaExcel(eventos)}
-                disabled={eventos.length === 0}
-                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700">
-                <Download size={18}/> Exportar Excel
+                    <button 
+                onClick={handleExportarExcel}
+                disabled={eventosExibidos.length === 0 || exportando}
+                className="flex items-center justify-center min-w-[160px] gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                {exportando ? (
+                    <><div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Aguarde...</>
+                ) : (
+                    <><Download size={18}/> Exportar Excel</>
+                )}
             </button>
         </div>
       </div>
