@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Calendar, Search, Filter, Download, ArrowDown, Database } from 'lucide-react';
 import { EventsTable } from '../components/dashboard/EventsTable';
 import { MediaModal } from '../components/dashboard/MediaModal';
+import {exportarParaExcel} from '../../utils/excelGenerator'
 import type { EventoLPR } from '../types';
 import { API_BASE_URL } from '../config'; 
 
@@ -74,8 +75,12 @@ export function History() {
         </div>
         
         <div className="flex gap-2">
-            <button className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700">
-                <Download size={18}/> Exportar CSV
+
+            <button 
+                onClick={() => exportarParaExcel(eventos)}
+                disabled={eventos.length === 0}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold transition dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700">
+                <Download size={18}/> Exportar Excel
             </button>
         </div>
       </div>
