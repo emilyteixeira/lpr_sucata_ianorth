@@ -9,7 +9,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (u: string, p: string) => Promise<void>;
+    login: (loginId: string, p: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
 }
@@ -29,11 +29,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
     }, []);
 
-    const login = async (username: string, password: string) => {
+    const login = async (loginId: string, password: string) => {
         const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ login: loginId, password }) 
         });
         
         if (!res.ok) throw new Error("Usuário ou senha incorretos");
