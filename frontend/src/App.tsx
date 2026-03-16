@@ -6,6 +6,7 @@ import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { AuthContext, AuthProvider } from '../contexts/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 const ProtectedLayout = () => {
   const { user, loading } = useContext(AuthContext);
@@ -52,10 +53,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
