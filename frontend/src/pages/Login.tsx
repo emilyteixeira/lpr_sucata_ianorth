@@ -30,7 +30,7 @@ export function Login() {
                     <div className="mb-8">
                         <img src="/sinobras-logo.png" alt="Sinobras Logo" className="h-12 mb-6" />
                         <h1 className="text-2xl font-extrabold text-slate-800">Sistema IANorth de Classificação de Sucata (SICS)</h1>
-                        <p className="text-slate-500 text-sm mt-2">Insira as suas credenciais para aceder ao painel de controlo e auditoria de sucata.</p>
+                        <p className="text-slate-500 text-sm mt-2">Insira as suas credenciais para aceder ao painel de controle e auditoria de sucata.</p>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-5">
