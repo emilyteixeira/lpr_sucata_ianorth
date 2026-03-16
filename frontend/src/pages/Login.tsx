@@ -88,7 +88,7 @@ export function Login() {
                 <div className="hidden md:block w-1/2 bg-blue-900 relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 to-slate-900/90 z-10" />
                     <img 
-                        src="/caminhão2dSinobras.png&auto=format&fit=crop&w=1000&q=80" 
+                        src="/caminhão2dSinobras.png" 
                         alt="Indústria" 
                         className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
                     />
