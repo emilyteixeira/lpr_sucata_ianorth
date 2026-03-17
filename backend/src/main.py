@@ -141,7 +141,7 @@ def fazer_login(dados: LoginRequest, db: Session = Depends(get_db)):
             "nome": usuario.nome, 
             "role": usuario.role, 
             "matricula": usuario.matricula,
-            "cargo": usuario
+            "cargo": usuario.cargo
         }
     }
 

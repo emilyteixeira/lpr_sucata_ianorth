@@ -40,9 +40,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!res.ok) throw new Error("Usuário ou senha incorretos");
         
         const data = await res.json();
+        
+        // Se o Backend enviar o objeto quebrado, nós consertamos na hora!
+        let cargoCorrigido = "Classificador";
+        if (typeof data.user.cargo === 'string') {
+            cargoCorrigido = data.user.cargo;
+        } else if (typeof data.user.cargo === 'object' && data.user.cargo !== null) {
+            cargoCorrigido = data.user.cargo.cargo || "Classificador";
+        }
+
+        const usuarioSeguro = {
+            ...data.user,
+            cargo: cargoCorrigido
+        };
+        // ================================================================
+
         localStorage.setItem('lpr_token', data.access_token);
-        localStorage.setItem('lpr_user', JSON.stringify(data.user));
-        setUser(data.user);
+        localStorage.setItem('lpr_user', JSON.stringify(usuarioSeguro));
+        setUser(usuarioSeguro);
     };
 
     const logout = () => {
