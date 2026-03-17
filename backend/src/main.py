@@ -70,7 +70,8 @@ async def lifespan(app: FastAPI):
                 nome="Gestão / Diretoria ", 
                 matricula="admin", 
                 senha_hash=senha_criptografada, 
-                role="admin"
+                role="admin",
+                cargo="Diretoria"
             )
             db.add(novo_admin)
             db.commit()
@@ -128,7 +129,8 @@ def fazer_login(dados: LoginRequest, db: Session = Depends(get_db)):
     token_data = {
         "sub": usuario.matricula, 
         "role": usuario.role, 
-        "nome": usuario.nome
+        "nome": usuario.nome,
+        "cargo": usuario.cargo
     }
     token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
     
@@ -138,7 +140,8 @@ def fazer_login(dados: LoginRequest, db: Session = Depends(get_db)):
         "user": {
             "nome": usuario.nome, 
             "role": usuario.role, 
-            "matricula": usuario.matricula
+            "matricula": usuario.matricula,
+            "cargo": usuario
         }
     }
 
@@ -156,7 +159,8 @@ def criar_usuario(dados: schemas.UsuarioCreate, db: Session = Depends(get_db)):
         matricula=dados.matricula,
         cpf=dados.cpf,
         senha_hash=pwd_context.hash(dados.password),
-        role=dados.role
+        role=dados.role,
+        cargo=dados.cargo
     )
     db.add(novo_usuario)
     db.commit()

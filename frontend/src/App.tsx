@@ -4,6 +4,9 @@ import { MainLayout } from './components/layout/MainLayout';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
+import { Users } from './pages/Users';      
+import { Reports } from './pages/Reports';       
+import { TicketDetails } from './pages/TicketDetails'; 
 import { Login } from './pages/Login';
 import { AuthContext, AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -22,9 +25,7 @@ const ProtectedLayout = () => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
   return (
     <MainLayout>
@@ -38,14 +39,17 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Rota Pública */}
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
 
-      {/* Todas estas rotas exigem a password correta */}
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
+        
+        {/* ROTAS DESBLOQUEADAS! */}
+        <Route path="/ticket/:id" element={<TicketDetails />} />
+        <Route path="/relatorios" element={<Reports />} />
+        <Route path="/admin/usuarios" element={<Users />} />
       </Route>
     </Routes>
   );

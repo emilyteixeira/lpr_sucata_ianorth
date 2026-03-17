@@ -68,4 +68,5 @@ class Usuario(Base):
     cpf = Column(String(20), unique=True, nullable=True)
     senha_hash = Column(String(255), nullable=False)
     role = Column(String(20), default="classificador")
+    cargo = Column(String(50), default="Classificador")
     is_active = Column(Boolean, default=True)
