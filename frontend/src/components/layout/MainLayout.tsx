@@ -3,7 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext'; 
 import { 
     Sun, Moon, LayoutDashboard, Menu, X, ChevronLeft, 
-    BarChart3, Settings, LogOut, History 
+    BarChart3, Settings, LogOut, History, 
+    UsersIcon,
+    SettingsIcon
 } from 'lucide-react';
 import { AuthContext } from '../../../contexts/AuthContext';
 
@@ -32,7 +34,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </button>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1 mt-6 overflow-y-auto">
+            <nav className="flex-1 px-3 space-y-1 mt-6 overflow-y-auto">
             <NavItem 
                 icon={<LayoutDashboard size={20}/>} 
                 label="Dashboard" 
@@ -51,14 +53,23 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 active={location.pathname.includes('/relatorios')}
                 onClick={() => navigate('/relatorios')}   
             />
-            {/* Mostra as configurações apenas se for admin */}
+            
+            {/* MENUS EXCLUSIVOS PARA ADMIN */}
             {user?.role === 'admin' && (
-                <NavItem 
-                    icon={<Settings size={20}/>} 
-                    label="Configurações" 
-                    active={location.pathname.includes('/settings')}
-                    onClick={() => navigate('/settings')}   
-                />
+                <>
+                    <NavItem 
+                        icon={<UsersIcon size={20}/>} 
+                        label="Equipe / Usuários" 
+                        active={location.pathname.includes('/admin/usuarios')}
+                        onClick={() => navigate('/admin/usuarios')}   
+                    />
+                    <NavItem 
+                        icon={<SettingsIcon size={20}/>} 
+                        label="Config. Câmeras" 
+                        active={location.pathname.includes('/settings')}
+                        onClick={() => navigate('/settings')}   
+                    />
+                </>
             )}
         </nav>
 
@@ -94,7 +105,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 {/* NOME DO USUÁRIO LOGADO NO TOPO */}
                 <div className="hidden md:flex flex-col items-end mr-2">
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{user?.nome || 'Operador'}</span>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{user?.role || 'Acesso Restrito'}</span>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{user?.cargo || 'Acesso Restrito'}</span>
                 </div>
 
                 <span className="hidden md:inline-block text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded-full border border-green-200 animate-pulse">

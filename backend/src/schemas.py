@@ -74,6 +74,7 @@ class UsuarioCreate(BaseModel):
     cpf: Optional[str] = None
     password: str
     role: str = "classificador"
+    cargo: str = "Classificador"
 
 
 class UsuarioResponse(BaseModel):
@@ -82,6 +83,7 @@ class UsuarioResponse(BaseModel):
     matricula: str
     cpf: Optional[str] = None
     role: str
+    cargo: str
     is_active: bool 
 
     class Config:

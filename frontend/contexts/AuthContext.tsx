@@ -5,6 +5,7 @@ interface User {
     matricula: string;
     nome: string;
     role: string;
+    cargo: string;
 }
 
 interface AuthContextType {
