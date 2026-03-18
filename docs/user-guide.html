@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guia do Usuário – Sistema IANorth de Classificação de Sucatas</title>
+  <style>
+    /* =============================================
+       RESET & BASE
+    ============================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    :root {
+      --primary:   #4f46e5;
+      --primary-d: #3730a3;
+      --accent:    #06b6d4;
+      --success:   #10b981;
+      --warning:   #f59e0b;
+      --danger:    #ef4444;
+      --dark:      #111827;
+      --gray-800:  #1f2937;
+      --gray-700:  #374151;
+      --gray-600:  #4b5563;
+      --gray-400:  #9ca3af;
+      --gray-200:  #e5e7eb;
+      --gray-100:  #f3f4f6;
+      --white:     #ffffff;
+      --sidebar-w: 260px;
+      --header-h:  60px;
+    }
+ 
+    html { font-size: 15px; scroll-behavior: smooth; }
+ 
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--gray-100);
+      color: var(--dark);
+      line-height: 1.65;
+    }
+ 
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+ 
+    /* =============================================
+       HEADER
+    ============================================= */
+    header {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      background: var(--primary);
+      color: var(--white);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+ 
+    .header-brand {
+      display: flex; align-items: center; gap: .75rem;
+      font-size: 1.1rem; font-weight: 700; letter-spacing: .3px;
+    }
+ 
+    .header-brand svg { flex-shrink: 0; }
+ 
+    .badge-version {
+      background: rgba(255,255,255,.2);
+      padding: 2px 8px; border-radius: 999px;
+      font-size: .72rem; font-weight: 600;
+    }
+ 
+    .btn-pdf {
+      display: flex; align-items: center; gap: .4rem;
+      background: var(--white); color: var(--primary);
+      border: none; border-radius: 8px;
+      padding: .45rem 1rem; font-size: .85rem; font-weight: 600;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn-pdf:hover { opacity: .85; }
+ 
+    /* =============================================
+       SIDEBAR
+    ============================================= */
+    nav#sidebar {
+      position: fixed; top: var(--header-h); left: 0;
+      width: var(--sidebar-w); height: calc(100vh - var(--header-h));
+      background: var(--white);
+      border-right: 1px solid var(--gray-200);
+      overflow-y: auto; padding: 1rem 0;
+      z-index: 150;
+    }
+ 
+    nav#sidebar h2 {
+      font-size: .7rem; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gray-400);
+      padding: .5rem 1.25rem; margin-top: .5rem;
+    }
+ 
+    nav#sidebar a {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .55rem 1.25rem;
+      color: var(--gray-700); font-size: .9rem;
+      border-left: 3px solid transparent;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    nav#sidebar a:hover { background: var(--gray-100); color: var(--primary); text-decoration: none; }
+    nav#sidebar a.active {
+      background: #ede9fe; color: var(--primary);
+      border-left-color: var(--primary); font-weight: 600;
+    }
+ 
+    nav#sidebar .nav-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: .8; }
+ 
+    /* =============================================
+       MAIN CONTENT
+    ============================================= */
+    main {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--header-h);
+      padding: 2rem 2.5rem;
+      max-width: 900px;
+    }
+ 
+    /* Sections */
+    section { margin-bottom: 3.5rem; }
+    section:first-of-type { margin-top: .5rem; }
+ 
+    /* Headings */
+    h1 { font-size: 1.9rem; font-weight: 800; color: var(--dark); margin-bottom: .4rem; }
+    h2 { font-size: 1.35rem; font-weight: 700; color: var(--dark); margin: 2rem 0 .75rem; border-bottom: 2px solid var(--gray-200); padding-bottom: .4rem; }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--primary-d); margin: 1.4rem 0 .4rem; }
+ 
+    .section-intro { color: var(--gray-600); font-size: .95rem; margin-bottom: 1rem; }
+    .lead { font-size: 1.05rem; color: var(--gray-700); margin-bottom: 1.5rem; }
+ 
+    /* Steps */
+    .steps { counter-reset: step; display: flex; flex-direction: column; gap: 1rem; margin: 1rem 0; }
+    .step {
+      counter-increment: step;
+      display: flex; gap: 1rem;
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 10px; padding: 1rem 1.2rem;
+    }
+    .step::before {
+      content: counter(step);
+      min-width: 32px; height: 32px; border-radius: 50%;
+      background: var(--primary); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem; flex-shrink: 0;
+    }
+    .step-content strong { display: block; margin-bottom: .25rem; color: var(--dark); }
+    .step-content p { font-size: .9rem; color: var(--gray-600); }
+ 
+    /* Cards */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 10px; padding: 1.1rem;
+    }
+    .card-title { font-weight: 700; color: var(--dark); margin-bottom: .35rem; font-size: .95rem; }
+    .card-body { font-size: .85rem; color: var(--gray-600); }
+    .card-icon { font-size: 1.6rem; margin-bottom: .5rem; }
+ 
+    /* Callouts */
+    .callout {
+      border-radius: 8px; padding: .85rem 1.1rem;
+      border-left: 4px solid; margin: 1rem 0;
+      font-size: .9rem;
+    }
+    .callout-info { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+    .callout-warning { background: #fffbeb; border-color: var(--warning); color: #92400e; }
+    .callout-success { background: #f0fdf4; border-color: var(--success); color: #166534; }
+    .callout-danger { background: #fef2f2; border-color: var(--danger); color: #991b1b; }
+    .callout strong { font-weight: 700; }
+ 
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin: 1rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th { background: var(--gray-100); color: var(--gray-700); font-weight: 700; padding: .6rem .9rem; text-align: left; border: 1px solid var(--gray-200); }
+    td { padding: .55rem .9rem; border: 1px solid var(--gray-200); color: var(--gray-700); }
+    tr:nth-child(even) td { background: #fafafa; }
+ 
+    /* Tags / badges */
+    .tag {
+      display: inline-block; border-radius: 6px;
+      padding: 2px 8px; font-size: .78rem; font-weight: 600;
+    }
+    .tag-green { background: #dcfce7; color: #166534; }
+    .tag-yellow { background: #fef9c3; color: #854d0e; }
+    .tag-red { background: #fee2e2; color: #991b1b; }
+    .tag-blue { background: #dbeafe; color: #1e40af; }
+    .tag-gray { background: var(--gray-200); color: var(--gray-700); }
+ 
+    /* Numbered list styled */
+    .num-list { list-style: decimal inside; padding-left: .5rem; }
+    .num-list li { margin: .4rem 0; font-size: .9rem; color: var(--gray-700); }
+ 
+    /* Inline code */
+    code { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 4px; padding: 1px 5px; font-size: .84rem; font-family: 'Courier New', monospace; }
+ 
+    /* Horizontal rule */
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 1.5rem 0; }
+ 
+    /* Hero section */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-d) 60%, #1e1b4b 100%);
+      color: var(--white); border-radius: 14px; padding: 2.2rem 2.5rem;
+      margin-bottom: 2rem;
+    }
+    .hero h1 { color: var(--white); font-size: 2rem; }
+    .hero p { opacity: .85; max-width: 620px; margin-top: .5rem; font-size: 1rem; }
+ 
+    /* Workflow visual */
+    .flow { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 1rem 0; }
+    .flow-step {
+      background: var(--white); border: 1px solid var(--gray-200); border-radius: 8px;
+      padding: .5rem .9rem; font-size: .85rem; font-weight: 600; color: var(--gray-700);
+    }
+    .flow-arrow { color: var(--gray-400); font-size: 1.1rem; }
+ 
+    /* Material density table highlighted */
+    .highlight { background: #ede9fe !important; font-weight: 600; color: var(--primary-d) !important; }
+ 
+    /* =============================================
+       PRINT / PDF
+    ============================================= */
+    @media print {
+      header, nav#sidebar, .btn-pdf { display: none !important; }
+      body { background: white; }
+      main { margin: 0; padding: 1cm 1.5cm; max-width: 100%; }
+      section { break-inside: avoid-page; }
+      .hero { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .callout { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      a { color: inherit; text-decoration: none; }
+      h1, h2, h3 { break-after: avoid; }
+      .step { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+ 
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header>
+  <div class="header-brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="white" fill-opacity="0.2"/>
+      <path d="M6 20L10 10L14 16L18 8L22 20H6Z" fill="white"/>
+      <circle cx="22" cy="8" r="2.5" fill="#06b6d4"/>
+    </svg>
+    Sistema IANorth – Classificação de Sucatas
+    <span class="badge-version">Guia do Usuário</span>
+  </div>
+  <button class="btn-pdf" onclick="window.print()">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+    </svg>
+    Exportar PDF
+  </button>
+</header>
+ 
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<nav id="sidebar">
+  <h2>Visão Geral</h2>
+  <a href="#introducao" class="nav-link active">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    Introdução
+  </a>
+  <a href="#fluxo" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0v10m0-10a2 2 0 012 2h2a2 2 0 012-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+    Fluxo do Processo
+  </a>
+ 
+  <h2>Primeiros Passos</h2>
+  <a href="#acesso" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+    Acesso ao Sistema
+  </a>
+  <a href="#dashboard" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    Dashboard
+  </a>
+ 
+  <h2>Classificação</h2>
+  <a href="#abertura" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+    Abrindo um Ticket
+  </a>
+  <a href="#classificacao" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    Classificando a Carga
+  </a>
+  <a href="#cubagem" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+    Cubagem do Veículo
+  </a>
+  <a href="#impurezas" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    Cálculo de Impurezas
+  </a>
+  <a href="#finalizacao" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    Finalizando o Ticket
+  </a>
+ 
+  <h2>Consultas e Relatórios</h2>
+  <a href="#historico" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    Histórico de Eventos
+  </a>
+  <a href="#rim" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+    Relatório R.I.M.
+  </a>
+  <a href="#relatorios" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+    Painel de BI
+  </a>
+ 
+  <h2>Administração</h2>
+  <a href="#usuarios" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    Usuários
+  </a>
+  <a href="#cameras" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+    Configuração de Câmeras
+  </a>
+  <a href="#glossario" class="nav-link">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+    Glossário
+  </a>
+</nav>
+ 
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main>
+ 
+  <!-- ===== INTRODUÇÃO ===== -->
+  <section id="introducao">
+    <div class="hero">
+      <h1>Sistema IANorth de Classificação de Sucatas</h1>
+      <p>Guia completo para operadores e classificadores. Este documento cobre todo o fluxo de trabalho — desde a chegada do caminhão até a geração do Relatório de Impureza de Materiais (R.I.M.).</p>
+    </div>
+ 
+    <p class="lead">O Sistema IANorth integra câmeras de reconhecimento de placas (LPR) com uma plataforma web para automatizar e auditar o recebimento, medição e certificação de sucatas metálicas.</p>
+ 
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📡</div>
+        <div class="card-title">Detecção Automática</div>
+        <div class="card-body">Câmeras Intelbras identificam a placa do veículo e criam o ticket automaticamente.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚖️</div>
+        <div class="card-title">Integração SINOBRAS</div>
+        <div class="card-body">Dados de balança e romaneio são consultados automaticamente via API.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗂️</div>
+        <div class="card-title">Classificação Precisa</div>
+        <div class="card-body">Formulários guiados calculam peso líquido, densidade e impurezas em tempo real.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📄</div>
+        <div class="card-title">Relatório R.I.M.</div>
+        <div class="card-body">Geração do documento oficial de impureza em PDF com fotos e assinatura.</div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-info">
+      <strong>Dica:</strong> Para exportar este guia em PDF, clique em <strong>Exportar PDF</strong> no canto superior direito ou use <code>Ctrl+P</code> no seu navegador.
+    </div>
+  </section>
+ 
+  <!-- ===== FLUXO DO PROCESSO ===== -->
+  <section id="fluxo">
+    <h2>Fluxo do Processo</h2>
+    <p class="section-intro">Entenda cada etapa desde a chegada do veículo até a finalização do ticket.</p>
+ 
+    <div class="flow">
+      <div class="flow-step">🚛 Caminhão chega</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">📡 LPR detecta placa</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">🔍 Consulta SINOBRAS</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">📸 Foto + vídeo</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">📋 Ticket criado</div>
+    </div>
+    <div class="flow" style="margin-top:.25rem">
+      <div class="flow-step">✍️ Operador classifica</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">⚖️ Cálculos automáticos</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">✅ Finalização</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">📄 Emissão do R.I.M.</div>
+    </div>
+ 
+    <div class="table-wrap" style="margin-top:1.5rem">
+      <table>
+        <thead><tr><th>Fase</th><th>Responsável</th><th>Status do Ticket</th></tr></thead>
+        <tbody>
+          <tr><td>Detecção da placa e consulta SINOBRAS</td><td>Sistema Automático</td><td><span class="tag tag-yellow">Aberto</span></td></tr>
+          <tr><td>Classificação e cubagem pelo operador</td><td>Classificador</td><td><span class="tag tag-blue">Em andamento</span></td></tr>
+          <tr><td>Validação de densidade e impurezas</td><td>Classificador / Supervisor</td><td><span class="tag tag-blue">Em andamento</span></td></tr>
+          <tr><td>Confirmação e geração do R.I.M.</td><td>Classificador</td><td><span class="tag tag-green">Finalizado</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+ 
+  <!-- ===== ACESSO AO SISTEMA ===== -->
+  <section id="acesso">
+    <h2>Acesso ao Sistema</h2>
+    <p class="section-intro">Acesse o sistema pelo navegador utilizando o endereço fornecido pela equipe de TI.</p>
+ 
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Abra o navegador (Chrome ou Firefox recomendados)</strong>
+          <p>Navegue até o endereço da intranet fornecido pelo administrador. Ex.: <code>http://192.168.1.82:8020</code></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Informe seu usuário e senha</strong>
+          <p>Digite as credenciais fornecidas pelo administrador do sistema. Não compartilhe sua senha.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Entrar"</strong>
+          <p>Você será redirecionado automaticamente para o Dashboard principal.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-warning">
+      <strong>Atenção:</strong> Caso esqueça sua senha, solicite a redefinição ao administrador do sistema. Ele pode resetar diretamente pelo painel de Usuários.
+    </div>
+ 
+    <h3>Perfis de Acesso</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Perfil</th><th>Permissões</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-red">Admin</span></td><td>Acesso total: usuários, câmeras, todos os tickets e configurações</td></tr>
+          <tr><td><span class="tag tag-blue">Classificador</span></td><td>Dashboard, classificação de tickets, histórico e geração de R.I.M.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+ 
+  <!-- ===== DASHBOARD ===== -->
+  <section id="dashboard">
+    <h2>Dashboard</h2>
+    <p class="section-intro">A tela inicial exibe o resumo do dia e os eventos em tempo real.</p>
+ 
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Tickets Finalizados</div>
+        <div class="card-body">Total de classificações concluídas hoje. Inclui peso total finalizado em toneladas.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tickets Abertos</div>
+        <div class="card-body">Tickets aguardando classificação. Ação necessária do operador.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Peso Total</div>
+        <div class="card-body">Somatório do peso bruto de todos os eventos do dia em toneladas.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Feed ao Vivo</div>
+        <div class="card-body">Lista dos eventos mais recentes com placa, fornecedor, peso e status.</div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-info">
+      <strong>Atualização automática:</strong> O Dashboard atualiza os dados automaticamente. Não é necessário recarregar a página manualmente.
+    </div>
+  </section>
+ 
+  <!-- ===== ABRINDO UM TICKET ===== -->
+  <section id="abertura">
+    <h2>Abrindo um Ticket</h2>
+    <p class="section-intro">O ticket é criado automaticamente quando a câmera LPR detecta o veículo. O operador acessa pelo Dashboard ou pelo Histórico.</p>
+ 
+    <h3>Via Dashboard</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Localize o evento no feed ao vivo</strong>
+          <p>O evento aparece com a placa do veículo, fornecedor, produto e peso bruto.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique no evento para abrir o Ticket</strong>
+          <p>Você será redirecionado para a tela de detalhes do ticket com os dados pré-preenchidos.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <h3>Via Histórico</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Acesse o menu "Histórico"</strong>
+          <p>Utilize a barra lateral de navegação.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Filtre por placa, fornecedor, data ou status</strong>
+          <p>Use os campos de filtro no topo da listagem.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Abrir" no ticket desejado</strong>
+          <p>Tickets com status <span class="tag tag-yellow">Aberto</span> ainda aguardam classificação.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <h3>Informações exibidas no Ticket</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Campo</th><th>Origem</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td>Placa</td><td>Câmera LPR</td><td>Placa capturada automaticamente pela câmera</td></tr>
+          <tr><td>Nº da Nota</td><td>SINOBRAS</td><td>Número da nota fiscal ou romaneio</td></tr>
+          <tr><td>Fornecedor</td><td>SINOBRAS</td><td>Razão social do fornecedor</td></tr>
+          <tr><td>Produto</td><td>SINOBRAS</td><td>Tipo de sucata declarada</td></tr>
+          <tr><td>Peso Bruto</td><td>SINOBRAS</td><td>Peso na balança de entrada (kg)</td></tr>
+          <tr><td>Data/Hora</td><td>Sistema</td><td>Momento da detecção pela câmera</td></tr>
+          <tr><td>Foto</td><td>Câmera</td><td>Snapshot automático no momento da detecção</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+ 
+  <!-- ===== CLASSIFICANDO A CARGA ===== -->
+  <section id="classificacao">
+    <h2>Classificando a Carga</h2>
+    <p class="section-intro">Esta é a etapa principal. O classificador informa os dados do material para que o sistema calcule peso líquido, tara, impureza e peso final.</p>
+ 
+    <div class="callout callout-warning">
+      <strong>Atenção:</strong> O sistema memoriza automaticamente o peso de tara e as dimensões do veículo das classificações anteriores. Sempre confira se os dados estão corretos antes de finalizar.
+    </div>
+ 
+    <h3>1. Peso de Tara</h3>
+    <p>Informe o peso vazio do veículo em <strong>quilogramas (kg)</strong>. O sistema calcula automaticamente:</p>
+    <ul style="margin:.5rem 0 .5rem 1.2rem; font-size:.9rem; color:var(--gray-700)">
+      <li><strong>Peso Líquido</strong> = Peso Bruto − Tara</li>
+    </ul>
+ 
+    <h3>2. Tipos de Material</h3>
+    <p>Adicione um ou mais tipos de sucata presentes na carga. Para cada material informe:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Campo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td>Tipo de Sucata</td><td>Selecione na lista (ex.: Sucata Mista, Sucata Graúda, Gusa Sólido…)</td></tr>
+          <tr><td>Peso (kg)</td><td>Peso estimado do material nessa categoria</td></tr>
+          <tr><td>% Impureza</td><td>Percentual de impureza observado nesse material</td></tr>
+        </tbody>
+      </table>
+    </div>
+ 
+    <div class="callout callout-success">
+      <strong>Dica:</strong> A soma dos pesos de cada material deve ser igual ou próxima ao Peso Líquido calculado.
+    </div>
+ 
+    <h3>3. Validação de Densidade</h3>
+    <p>O sistema valida a densidade da carga em tempo real com base nas dimensões do veículo (cubagem). Para cada material existe um intervalo de densidade aceitável:</p>
+ 
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Material</th><th>Densidade Mínima (t/m³)</th><th>Densidade Máxima (t/m³)</th></tr></thead>
+        <tbody>
+          <tr><td>Sucata Mista</td><td>0,20</td><td>0,60</td></tr>
+          <tr><td>Sucata Graúda</td><td>0,30</td><td>0,80</td></tr>
+          <tr><td>Sucata Média</td><td>0,25</td><td>0,65</td></tr>
+          <tr><td>Sucata Miúda</td><td>0,40</td><td>0,90</td></tr>
+          <tr><td>Pacotão / Fardo</td><td>0,50</td><td>1,50</td></tr>
+          <tr><td>Gusa Sólido</td><td>2,70</td><td>3,90</td></tr>
+          <tr><td>Aparas Aço</td><td>0,40</td><td>1,20</td></tr>
+          <tr><td>Ferro Fundido</td><td>1,50</td><td>3,50</td></tr>
+        </tbody>
+      </table>
+    </div>
+ 
+    <h3>Indicadores de Densidade</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:.75rem; margin:.75rem 0">
+      <span class="tag tag-green" style="padding:.4rem .9rem; font-size:.85rem">✓ DENTRO DO INTERVALO — Densidade normal</span>
+      <span class="tag tag-yellow" style="padding:.4rem .9rem; font-size:.85rem">⚠ ALERTA — Próximo dos limites</span>
+      <span class="tag tag-red" style="padding:.4rem .9rem; font-size:.85rem">✗ FORA DO INTERVALO — Verificar carga</span>
+    </div>
+  </section>
+ 
+  <!-- ===== CUBAGEM ===== -->
+  <section id="cubagem">
+    <h2>Cubagem do Veículo</h2>
+    <p class="section-intro">A cubagem (volume da caçamba) é necessária para o cálculo de densidade. O sistema memoriza as medidas de cargas anteriores do mesmo veículo.</p>
+ 
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Meça as dimensões internas da caçamba</strong>
+          <p>Utilize trena ou medição visual. Informe em <strong>metros</strong>: Comprimento (C), Largura (L) e Altura (H) da carga.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Informe os valores nos campos correspondentes</strong>
+          <p>O sistema calcula automaticamente: <code>Volume = C × L × H</code> (em m³).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Verifique a densidade calculada</strong>
+          <p><code>Densidade = (Peso Líquido ÷ 1000) ÷ Volume</code>. Deve estar dentro do intervalo do material.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-info">
+      <strong>Memória de cubagem:</strong> Para veículos que já passaram pelo sistema, as dimensões anteriores são sugeridas automaticamente. Confirme ou ajuste conforme a carga atual.
+    </div>
+  </section>
+ 
+  <!-- ===== IMPUREZAS ===== -->
+  <section id="impurezas">
+    <h2>Cálculo de Impurezas</h2>
+    <p class="section-intro">As impurezas são deduções aplicadas ao peso líquido. Informe o percentual observado em campo para cada tipo de material.</p>
+ 
+    <h3>Fórmulas</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cálculo</th><th>Fórmula</th></tr></thead>
+        <tbody>
+          <tr><td>Desconto (kg)</td><td>Peso Líquido × (% Impureza ÷ 100)</td></tr>
+          <tr><td>Peso Final (kg)</td><td>Peso Líquido − Desconto</td></tr>
+          <tr><td>Peso Final (t)</td><td>Peso Final ÷ 1000</td></tr>
+        </tbody>
+      </table>
+    </div>
+ 
+    <h3>Exemplos de Impurezas Comuns</h3>
+    <ul class="num-list">
+      <li>Terra, areia e pedras</li>
+      <li>Madeira e plástico misturado</li>
+      <li>Água acumulada</li>
+      <li>Materiais não ferrosos (alumínio, cobre)</li>
+      <li>Tinta em excesso</li>
+    </ul>
+ 
+    <h3>Registrar Fotos de Evidência</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Tire fotos da impureza identificada</strong>
+          <p>Use o celular ou câmera disponível. Fotos claras e bem iluminadas facilitam a auditoria.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Faça o upload no ticket</strong>
+          <p>Clique em "Adicionar foto" na seção de impurezas. As imagens serão anexadas automaticamente ao R.I.M.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Adicione observações textuais</strong>
+          <p>Descreva o tipo e localização da impureza no campo "Observações".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ===== FINALIZANDO ===== -->
+  <section id="finalizacao">
+    <h2>Finalizando o Ticket</h2>
+    <p class="section-intro">Após preencher todos os dados, revise e finalize o ticket para gerar o R.I.M.</p>
+ 
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Revise o resumo do ticket</strong>
+          <p>Confirme: Peso Bruto, Tara, Peso Líquido, Desconto por impureza e Peso Final.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Certifique-se que todos os campos obrigatórios estão preenchidos</strong>
+          <p>Materiais, cubagem, impurezas. A densidade deve estar dentro do intervalo esperado (ou devidamente justificada).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Finalizar"</strong>
+          <p>O status do ticket muda de <span class="tag tag-yellow">Aberto</span> para <span class="tag tag-green">Finalizado</span>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Gere e imprima o R.I.M. (se necessário)</strong>
+          <p>Clique em "Gerar R.I.M." para baixar o PDF com todos os dados e fotos do ticket.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-danger">
+      <strong>Importante:</strong> Após finalizado, o ticket não pode ser reaberto pelo classificador. Em caso de erro, entre em contato com o administrador do sistema.
+    </div>
+  </section>
+ 
+  <!-- ===== HISTÓRICO ===== -->
+  <section id="historico">
+    <h2>Histórico de Eventos</h2>
+    <p class="section-intro">Consulte todos os tickets do sistema com filtros avançados.</p>
+ 
+    <h3>Filtros Disponíveis</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-title">Por Placa</div><div class="card-body">Busca exata ou parcial da placa do veículo.</div></div>
+      <div class="card"><div class="card-title">Por Fornecedor</div><div class="card-body">Nome do fornecedor conforme registrado no SINOBRAS.</div></div>
+      <div class="card"><div class="card-title">Por Data</div><div class="card-body">Intervalo de datas (data início e data fim).</div></div>
+      <div class="card"><div class="card-title">Por Status</div><div class="card-body">Todos / Abertos / Finalizados.</div></div>
+    </div>
+ 
+    <h3>Exportar para Excel</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Aplique os filtros desejados</strong>
+          <p>Defina o período e os critérios de busca.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Exportar Excel"</strong>
+          <p>Um arquivo <code>.xlsx</code> será baixado com todos os registros filtrados, incluindo colunas de placa, fornecedor, produto, pesos, impurezas e data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ===== R.I.M. ===== -->
+  <section id="rim">
+    <h2>Relatório R.I.M. (Relatório de Impureza de Materiais)</h2>
+    <p class="section-intro">O R.I.M. é o documento oficial que certifica a composição e impureza da carga recebida. É gerado em PDF.</p>
+ 
+    <h3>O que consta no R.I.M.</h3>
+    <ul class="num-list">
+      <li>Logotipos da empresa e do fornecedor</li>
+      <li>Número do ticket e data de emissão</li>
+      <li>Dados do veículo (placa), fornecedor e produto</li>
+      <li>Tabela de auditoria de pesagem: Bruto / Tara / Líquido / Desconto / Final</li>
+      <li>Composição dos materiais por tipo e peso</li>
+      <li>Percentual e descrição das impurezas</li>
+      <li>Fotos de evidência das impurezas (máx. 2 por página)</li>
+      <li>Campo para assinatura do classificador e do fornecedor</li>
+    </ul>
+ 
+    <h3>Gerando o R.I.M.</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Abra o ticket finalizado</strong>
+          <p>Tickets com status <span class="tag tag-green">Finalizado</span> estão prontos para emissão.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Gerar R.I.M."</strong>
+          <p>O sistema gera o PDF automaticamente no navegador e inicia o download.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Imprima ou salve o arquivo</strong>
+          <p>O PDF pode ser impresso diretamente ou arquivado eletronicamente conforme a política da empresa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ===== RELATÓRIOS / BI ===== -->
+  <section id="relatorios">
+    <h2>Painel de BI (Business Intelligence)</h2>
+    <p class="section-intro">Acesse indicadores e gráficos consolidados para análise gerencial.</p>
+ 
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">Evolução Diária</div>
+        <div class="card-body">Gráfico de linha com peso total por dia nos últimos 30 dias.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🥧</div>
+        <div class="card-title">Distribuição de Materiais</div>
+        <div class="card-body">Gráfico de pizza com a proporção de cada tipo de sucata recebida.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">Impureza por Tipo</div>
+        <div class="card-body">Gráfico de barras com percentual médio de impureza por categoria de material.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔬</div>
+        <div class="card-title">Densidade × Peso</div>
+        <div class="card-body">Gráfico composto para análise de qualidade e consistência das cargas.</div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-info">
+      <strong>Interatividade:</strong> Os widgets do painel podem ser reorganizados arrastando-os e redimensionados pelas alças nos cantos. Clique em um gráfico para ver os detalhes no Histórico.
+    </div>
+  </section>
+ 
+  <!-- ===== USUÁRIOS ===== -->
+  <section id="usuarios">
+    <h2>Gerenciamento de Usuários <span class="tag tag-red" style="font-size:.75rem; vertical-align:middle">Admin</span></h2>
+    <p class="section-intro">Disponível apenas para administradores. Crie, ative, desative e redefina senhas de usuários.</p>
+ 
+    <h3>Criar Novo Usuário</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Acesse "Usuários" na barra de navegação</strong>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Clique em "Novo Usuário"</strong>
+          <p>Preencha: nome completo, nome de usuário (login), senha inicial e perfil (Admin / Classificador).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Salve e comunique as credenciais ao novo colaborador</strong>
+          <p>Oriente o usuário a alterar a senha no primeiro acesso.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <h3>Outras Ações</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ação</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td>Ativar / Desativar</td><td>Bloqueia o acesso sem excluir o histórico do usuário</td></tr>
+          <tr><td>Redefinir Senha</td><td>Define uma nova senha temporária para o usuário</td></tr>
+          <tr><td>Editar Perfil</td><td>Altera nome, login ou nível de acesso</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+ 
+  <!-- ===== CÂMERAS ===== -->
+  <section id="cameras">
+    <h2>Configuração de Câmeras <span class="tag tag-red" style="font-size:.75rem; vertical-align:middle">Admin</span></h2>
+    <p class="section-intro">Configure os endereços IP e credenciais das câmeras Intelbras LPR.</p>
+ 
+    <div class="steps">
+      <div class="step">
+        <div class="step-content">
+          <strong>Acesse "Configurações" na barra de navegação</strong>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Informe o IP e porta de cada câmera</strong>
+          <p>Ex.: <code>192.168.1.100:80</code>. Consulte o endereço com o técnico de TI.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Informe usuário e senha da câmera</strong>
+          <p>Credenciais configuradas na câmera durante a instalação.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-content">
+          <strong>Salve e aguarde a reconexão automática</strong>
+          <p>O sistema reconecta ao listener LPR automaticamente após salvar.</p>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="callout callout-warning">
+      <strong>Atenção:</strong> Câmeras com configurações incorretas não enviarão eventos para o sistema. Sempre teste após qualquer alteração.
+    </div>
+  </section>
+ 
+  <!-- ===== GLOSSÁRIO ===== -->
+  <section id="glossario">
+    <h2>Glossário</h2>
+ 
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Termo</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LPR</strong></td><td>License Plate Recognition — reconhecimento automático de placas veiculares por câmera</td></tr>
+          <tr><td><strong>SINOBRAS</strong></td><td>Sistema integrado que fornece dados de balança e romaneio para cada caminhão</td></tr>
+          <tr><td><strong>R.I.M.</strong></td><td>Relatório de Impureza de Materiais — documento oficial de classificação da carga</td></tr>
+          <tr><td><strong>Ticket</strong></td><td>Registro de um evento de recebimento de sucata, da detecção até a finalização</td></tr>
+          <tr><td><strong>Cubagem</strong></td><td>Cálculo do volume da caçamba do veículo (Comprimento × Largura × Altura)</td></tr>
+          <tr><td><strong>Densidade</strong></td><td>Relação entre o peso líquido e o volume da carga (t/m³)</td></tr>
+          <tr><td><strong>Peso Bruto</strong></td><td>Peso total do veículo carregado, medido na balança de entrada</td></tr>
+          <tr><td><strong>Tara</strong></td><td>Peso do veículo vazio (sem carga)</td></tr>
+          <tr><td><strong>Peso Líquido</strong></td><td>Peso da sucata = Peso Bruto − Tara</td></tr>
+          <tr><td><strong>Desconto</strong></td><td>Dedução em kg correspondente ao percentual de impureza</td></tr>
+          <tr><td><strong>Peso Final</strong></td><td>Peso líquido após desconto das impurezas — base para faturamento</td></tr>
+          <tr><td><strong>Sucata Mista</strong></td><td>Mistura de materiais ferrosos sem classificação definida</td></tr>
+          <tr><td><strong>Gusa Sólido</strong></td><td>Ferro fundido em blocos sólidos, alta densidade</td></tr>
+          <tr><td><strong>Fardo / Pacotão</strong></td><td>Sucata prensada em formato compacto</td></tr>
+        </tbody>
+      </table>
+    </div>
+ 
+    <hr/>
+    <p style="text-align:center; color:var(--gray-400); font-size:.82rem; margin-top:1rem">
+      Sistema IANorth de Classificação de Sucatas &mdash; Documentação do Usuário &mdash; 2025<br/>
+      Para suporte técnico, contate a equipe de TI ou o administrador do sistema.
+    </p>
+  </section>
+ 
+</main>
+ 
+<!-- ============================================================
+     NAVIGATION SCRIPT
+============================================================ -->
+<script>
+  const links = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('main section');
+ 
+  function setActive(id) {
+    links.forEach(l => l.classList.remove('active'));
+    const link = document.querySelector(`.nav-link[href="#${id}"]`);
+    if (link) link.classList.add('active');
+  }
+ 
+  // Highlight on click
+  links.forEach(link => {
+    link.addEventListener('click', () => {
+      const id = link.getAttribute('href').slice(1);
+      setActive(id);
+    });
+  });
+ 
+  // Highlight on scroll (IntersectionObserver)
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) setActive(entry.target.id);
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+ 
+  sections.forEach(s => observer.observe(s));
+</script>
+ 
+</body>
+</html>
