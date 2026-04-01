@@ -24,4 +24,5 @@ python-multipart
 pandas
 openpyxl
 passlib[bcrypt]
+bcrypt==3.2.2
 PyJWT

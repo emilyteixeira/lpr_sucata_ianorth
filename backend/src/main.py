@@ -553,6 +553,39 @@ def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session
     db.refresh(evento)
     return {"status": "Sucesso", "url": url_relativa, "lista_atual": evento.fotos_avaria}
 
+
+class BuscaManualRequest(BaseModel):
+    parametro: str #A placa por enquanto
+
+@app.post("/api/eventos/busca-manual")
+def busca_manual_sinobras(dados: BuscaManualRequest, db: Session = Depends(get_db)):
+    termo = dados.parametro.upper().strip().replace("-", "")
+
+    dados_api = sinobras.consultar_truck_arrival(termo)
+
+    if not dados_api:
+        raise HTTPException(status_code=404, detail="Nenhum ticket encontrado na Sinobras para este termo.")
+    
+    novo_evento = models.EventoVMS(
+        timestamp_registro=datetime.now().isoformat(),
+        placa_veiculo=termo,
+        camera_nome="Inclusão Manual",
+        ticket_id=dados_api.get('ticket', '0'),
+        status_ticket='Aberto',
+        fornecedor_nome=dados_api.get('fornecedor', 'Não Identificado'),
+        produto_declarado=dados_api.get('tipoProduto', 'Desconhecido'),
+        nota_fiscal=dados_api.get('notaFiscal', ''),
+        peso_nf=dados_api.get('pesoNf', 0.0),
+        peso_balanca=dados_api.get('pesagemInicial', 0.0),
+        origem_dado="BUSCA_MANUAL"
+    )
+
+    db.add(novo_evento)
+    db.commit()
+
+    return {"mensagem": "Ticket importado com sucesso!"}
+
+
 # ROTAS DAS GARRAS
 
 @app.get("/config/garras")
