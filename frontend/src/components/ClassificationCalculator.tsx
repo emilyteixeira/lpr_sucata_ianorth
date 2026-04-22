@@ -5,18 +5,18 @@ import type { EventoLPR } from '../types';
 import { gerarPDFTicket } from '../../utils/pdfGenerator';
 
 const DENSITY_RANGES: Record<string, [number, number]> = {
-  "SUCATA MISTA": [0.2, 0.6],
-  "SUCATA MIÚDA": [0.5, 1.5],
-  "SUCATA PESADA": [0.5, 1.6],
-  "SUCATA GRAÚDA DE CORTE": [0.6, 1.7],
-  "SUCATA TRILHO FERROVIÁRIO": [0.6, 1.7],
-  "SUCATA SHREDDER INDUSTRIALIZADA": [0.65, 1.15],
-  "SUCATA TESOURADA INDUSTRIALIZADA": [0.45, 1.1],
-  "SUCATA PESADA INDUSTRIALIZADA": [0.5, 1.6],
-  "SUCATA DE GUSA INDUSTRIALIZADA": [2.0, 4.0],
-  "GUSA SÓLIDO INDUSTRIALIZADO": [2.7, 3.9],
-  "SUCATA PACOTE ENCHARUTADO": [0.4, 1.5],
-  "SUCATA PACOTE MISTO": [0.4, 1.5]
+    "SUCATA MISTA": [0.2, 0.6],
+    "SUCATA MIÚDA": [0.5, 1.5],
+    "SUCATA PESADA": [0.5, 1.6],
+    "SUCATA GRAÚDA DE CORTE": [0.6, 1.7],
+    "SUCATA TRILHO FERROVIÁRIO": [0.6, 1.7],
+    "SUCATA SHREDDER INDUSTRIALIZADA": [0.65, 1.15],
+    "SUCATA TESOURADA INDUSTRIALIZADA": [0.45, 1.1],
+    "SUCATA PESADA INDUSTRIALIZADA": [0.5, 1.6],
+    "SUCATA DE GUSA INDUSTRIALIZADA": [2.0, 4.0],
+    "GUSA SÓLIDO INDUSTRIALIZADO": [2.7, 3.9],
+    "SUCATA PACOTE ENCHARUTADO": [0.4, 1.5],
+    "SUCATA PACOTE MISTO": [0.4, 1.5]
 };
 
 interface Props {
@@ -49,7 +49,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                 setMateriais([{ tipo: ticket.tipo_sucata, peso: 0, impureza: 0 }]);
             }
         } else if (materiais.length === 0) {
-             setMateriais([{ tipo: "", peso: 0, impureza: 0 }]);
+            setMateriais([{ tipo: "", peso: 0, impureza: 0 }]);
         }
     }, [ticket]);
 
@@ -63,7 +63,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
 
         const mediaImpurezaCalculada = totalPesoInfo > 0 ? (totalImpurezaKgInfo / totalPesoInfo) * 100 : 0;
         const strTipos = materiais.map(m => `${m.tipo}=${m.peso}|${m.impureza}`).join(';');
-        
+
         if (!isFinalizado) {
             setFormData(prev => {
                 if (prev.tipo_sucata === strTipos && prev.impureza_porcentagem === mediaImpurezaCalculada) {
@@ -76,7 +76,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
 
     const addMaterial = () => setMateriais([...materiais, { tipo: "", peso: 0, impureza: 0 }]);
     const removeMaterial = (idx: number) => { const n = [...materiais]; n.splice(idx,1); setMateriais(n); };
-    
+
     const updateMaterial = (idx: number, field: keyof MaterialItem, val: any) => {
         const n = [...materiais]; n[idx] = { ...n[idx], [field]: val };
         setMateriais(n);
@@ -86,12 +86,12 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
     const pesoBruto = ticket?.peso_balanca || 0;
     const pesoTara = Number(formData.peso_tara) || 0;
     const pesoLiquido = Math.max(0, pesoBruto - pesoTara);
-    
+
     const comp = Number(formData.dim_comprimento) || 0;
     const larg = Number(formData.dim_largura) || 0;
     const alt = Number(formData.dim_altura) || 0;
     const vol = comp * larg * alt;
-    
+
     let totalPesoInformado = 0;
     let totalImpurezaKgInformada = 0;
     materiais.forEach(m => {
@@ -115,7 +115,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
     const minFinal = minIdeal;
     const maxFinal = maxIdeal;
     const densidade = vol > 0 ? ((pesoLiquido / 1000) / vol) : 0;
-    
+
     const descontoKgTotal = pesoLiquido * (mediaImpurezaFinal / 100);
     const pesoFinalTotal = pesoLiquido - descontoKgTotal;
 
@@ -162,7 +162,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
             </div>
 
             <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
+
                 {/* LISTA DE MATERIAIS */}
                 <div className="lg:col-span-7 space-y-3 border-r border-slate-200 dark:border-slate-700 pr-4">
                     <div className="flex justify-between items-center">
@@ -173,7 +173,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                             </button>
                         )}
                     </div>
-                    
+
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
                         {materiais.map((m, idx) => {
                             const proporcao = totalPesoInformado > 0 ? (m.peso / totalPesoInformado) : 0;
@@ -229,14 +229,29 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                         })}
                     </div>
 
-
-                     {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
-                        <div className={`text-[10px] font-bold text-right mt-1 ${totalPesoInformado > pesoLiquido ? 'text-red-500' : 'text-orange-500'}`}>
-                            Líquido da Balança: {pesoLiquido.toLocaleString()} kg | Soma Digitada: {totalPesoInformado.toLocaleString()} kg 
+                    {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
+                        <div className={`mt-2 p-2 rounded border text-right ${
+totalPesoInformado > pesoLiquido 
+? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:border-red-800' 
+: 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800'
+}`}>
+                            <div className="flex items-center justify-end gap-1 font-bold text-xs mb-0.5">
+                                <AlertTriangle size={14}/>
+                                <span>
+                                    {totalPesoInformado < pesoLiquido 
+                                        ? `Faltam ${(pesoLiquido - totalPesoInformado).toLocaleString()} kg para fechar a carga.`
+                                        : `Passou ${(totalPesoInformado - pesoLiquido).toLocaleString()} kg do peso da balança.`
+                                    }
+                                </span>
+                            </div>
+                            <div className="text-[10px] opacity-80 font-bold">
+                                Balança: {pesoLiquido.toLocaleString()} kg | Digitado: {totalPesoInformado.toLocaleString()} kg 
+                            </div>
                         </div>
                     )}
 
-                     </div>
+
+                </div>
 
                 {/* DIMENSÕES E TARA */}
                 <div className="lg:col-span-2 space-y-4 border-r border-slate-200 dark:border-slate-700 pr-4 flex flex-col justify-center">
@@ -282,7 +297,7 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                 <div className="lg:col-span-3 flex flex-col justify-between h-full">
                     <div className="text-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase block">Status da Carga</span>
-                        
+
                         {totalPesoInformado > 0 && vol > 0 && mediaImpurezaFinal > 3.0 ? (
                             <button 
                                 onClick={async () => {
@@ -302,10 +317,10 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                                 </div>
                             </button>
                         ) : (
-                            <div className={`mt-2 w-full py-2 px-3 rounded border flex items-center justify-center gap-2 font-bold text-xs shadow-sm transition-all duration-300 ${statusBg} ${statusCor}`}>
-                                {icone} {statusTexto}
-                            </div>
-                        )}
+                                <div className={`mt-2 w-full py-2 px-3 rounded border flex items-center justify-center gap-2 font-bold text-xs shadow-sm transition-all duration-300 ${statusBg} ${statusCor}`}>
+                                    {icone} {statusTexto}
+                                </div>
+                            )}
 
                         <div className="mt-4 flex justify-between items-end border-b border-slate-100 dark:border-slate-700 pb-2">
                             <span className="text-[10px] text-slate-400">Densidade Global</span>
