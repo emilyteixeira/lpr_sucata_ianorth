@@ -229,12 +229,14 @@ export function ClassificationCalculator({ formData, setFormData, ticket, isFina
                         })}
                     </div>
 
-                    {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
+
+                     {Math.abs(totalPesoInformado - pesoLiquido) > 2 && totalPesoInformado > 0 && (
                         <div className={`text-[10px] font-bold text-right mt-1 ${totalPesoInformado > pesoLiquido ? 'text-red-500' : 'text-orange-500'}`}>
                             Líquido da Balança: {pesoLiquido.toLocaleString()} kg | Soma Digitada: {totalPesoInformado.toLocaleString()} kg 
                         </div>
                     )}
-                </div>
+
+                     </div>
 
                 {/* DIMENSÕES E TARA */}
                 <div className="lg:col-span-2 space-y-4 border-r border-slate-200 dark:border-slate-700 pr-4 flex flex-col justify-center">

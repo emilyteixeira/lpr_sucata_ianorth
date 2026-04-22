@@ -253,10 +253,10 @@ def _processamento_com_tentativas(placa: str, origem: str, user: str = "admin", 
     ).start()
 
     def capturar_foto_atrasada():
-        print(f"[{placa}] Câmera engatilhada. Aguardando 6s para fotografar a carroceria...")
-        time.sleep(4)
+        print(f"[{placa}] Câmera engatilhada. Aguardando 1s para fotografar a carroceria...")
+        time.sleep(1)
         try:
-            salvar_snapshot_camera(ip_real_camera, user, password, placa, nome_fixo=nome_arquivo_video )
+            salvar_snapshot_camera(ip_real_camera, user, password, placa, nome_fixo=nome_arquivo_foto )
             print(f"[{placa}] Foto da carroceria salva com sucesso!")
         except Exception as e:
             print(f"[{placa}] Falha ao salvar foto: {e}")
@@ -563,6 +563,7 @@ def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session
 class BuscaManualRequest(BaseModel):
     parametro: str #A placa por enquanto
 
+
 @app.post("/api/eventos/busca-manual")
 def busca_manual_sinobras(dados: BuscaManualRequest, db: Session = Depends(get_db)):
     termo = dados.parametro.upper().strip().replace("-", "")
@@ -570,10 +571,62 @@ def busca_manual_sinobras(dados: BuscaManualRequest, db: Session = Depends(get_d
     dados_api = sinobras.consultar_truck_arrival(termo)
 
     if not dados_api:
-        raise HTTPException(status_code=404, detail="Nenhum ticket encontrado na Sinobras para este termo.")
-    
+        raise HTTPException(status_code=404, detail="Não encontrado. Lembre-se de digitar a PLACA (e não o número do ticket).")
+
+    produto = str(dados_api.get('tipoProduto', '')).lower()
+    if 'sucata' not in produto:
+        raise HTTPException(status_code=400, detail=f"Carga Incompatível: O produto desta viagem é '{produto}'.")
+
+    raw_date = str(dados_api.get('dataHoraEntrada', ''))
+    hoje_iso = datetime.now().strftime("%Y-%m-%d")
+    hoje_br = datetime.now().strftime("%d/%m/%Y")
+
+    if hoje_iso not in raw_date and hoje_br not in raw_date:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Atenção: A placa {termo} tem um ticket preso no dia '{raw_date}'. Isso significa que o caminhão ainda não passou na balança hoje."
+        )
+
+    try:
+        dt_obj = datetime.fromisoformat(raw_date)
+        data_formatada = dt_obj.strftime("%d/%m/%Y %H:%M")
+        horario_oficial_painel = dt_obj.strftime("%Y-%m-%d %H:%M:%S") 
+    except:
+        data_formatada = raw_date
+        horario_oficial_painel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    ultimo_evento = db.query(models.EventoVMS).filter(
+        models.EventoVMS.placa_veiculo.ilike(f"%{termo}%"),
+        models.EventoVMS.peso_tara > 0 
+    ).order_by(desc(models.EventoVMS.id)).first()
+
+    tara_hist = 0.0
+    comp_hist = 0.0
+    larg_hist = 0.0
+    alt_hist = 0.0
+
+    if ultimo_evento:
+        tara_hist = float(ultimo_evento.peso_tara or 0.0)
+        comp_hist = float(ultimo_evento.dim_comprimento or 0.0)
+        larg_hist = float(ultimo_evento.dim_largura or 0.0)
+        alt_hist = float(ultimo_evento.dim_altura or 0.0)
+
+    foto_encontrada = None
+    video_encontrado = None
+    padrao_foto = os.path.join(STATIC_DIR, "snapshots", f"{termo}_*.jpg")
+    fotos = glob.glob(padrao_foto)
+    if fotos:
+        foto_recente = sorted(fotos)[-1] 
+        foto_encontrada = f"/imagens/snapshots/{os.path.basename(foto_recente)}"
+        
+    padrao_video = os.path.join(STATIC_DIR, "videos", f"{termo}_*.mp4")
+    videos = glob.glob(padrao_video)
+    if videos:
+        video_recente = sorted(videos)[-1]
+        video_encontrado = f"/imagens/videos/{os.path.basename(video_recente)}"
+
     novo_evento = models.EventoVMS(
-        timestamp_registro=datetime.now().isoformat(),
+        timestamp_registro=horario_oficial_painel, 
         placa_veiculo=termo,
         camera_nome="Inclusão Manual",
         ticket_id=dados_api.get('ticket', '0'),
@@ -581,15 +634,23 @@ def busca_manual_sinobras(dados: BuscaManualRequest, db: Session = Depends(get_d
         fornecedor_nome=dados_api.get('fornecedor', 'Não Identificado'),
         produto_declarado=dados_api.get('tipoProduto', 'Desconhecido'),
         nota_fiscal=dados_api.get('notaFiscal', ''),
-        peso_nf=dados_api.get('pesoNf', 0.0),
-        peso_balanca=dados_api.get('pesagemInicial', 0.0),
-        origem_dado="BUSCA_MANUAL"
+        peso_nf=dados_api.get('peso_nf', 0.0),
+        peso_balanca=float(dados_api.get('pesagemInicial', 0.0)),
+        data_entrada_sinobras=data_formatada,
+        peso_tara=tara_hist,           
+        dim_comprimento=comp_hist,     
+        dim_largura=larg_hist,         
+        dim_altura=alt_hist,        
+        origem_dado="BUSCA_MANUAL",
+        snapshot_url=foto_encontrada,
+        video_url=video_encontrado
     )
 
     db.add(novo_evento)
     db.commit()
 
-    return {"mensagem": "Ticket importado com sucesso!"}
+    return {"mensagem": "Ticket importado com sucesso! Dados e imagens associados."}
+
 
 
 # ROTAS DAS GARRAS
