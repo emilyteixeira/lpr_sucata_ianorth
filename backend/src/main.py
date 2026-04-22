@@ -219,8 +219,8 @@ def get_garras_config():
             })
     return garras
 
-def processar_evento_camera(placa: str, origem: str):
-    t = threading.Thread(target=_processamento_com_tentativas, args=(placa, origem))
+def processar_evento_camera(placa: str, origem: str, user: str, password: str):
+    t = threading.Thread(target=_processamento_com_tentativas, args=(placa, origem, user, password))
     t.daemon = True
     t.start()
 
