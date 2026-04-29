@@ -25,6 +25,8 @@ from passlib.context import CryptContext
 import jwt
 
 from src import models, database, schemas
+from src.routers import cubagem
+from src.services.pdf_report import render_evento_pdf
 from src.services import sinobras
 from src.services.intelbras_listener import IntelbrasLPRListener
 from src.services.mock_intelbras import MockIntelbrasListener
@@ -108,6 +110,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+app.include_router(cubagem.router, prefix="/cubagem", tags=["cubagem"])
 
 
 class LoginRequest(BaseModel):
@@ -488,6 +492,27 @@ def obter_detalhes_evento(evento_id: int, db: Session = Depends(get_db)):
     if not evento:
         raise HTTPException(status_code=404, detail="Ticket não encontrado")
     return evento
+
+
+@app.get("/eventos/{evento_id}/relatorio-pdf")
+def baixar_relatorio_pdf(
+    evento_id: int,
+    db: Session = Depends(get_db),
+):
+    evento = db.query(models.EventoVMS).filter(models.EventoVMS.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Ticket não encontrado")
+
+    logo_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "frontend",
+        "public",
+        "IanorthLog.png",
+    )
+    pdf_buffer = render_evento_pdf(evento, logo_path=logo_path)
+    filename = f"ticket_{evento_id}.pdf"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
 
 @app.get("/admin/sincronizar-antigos")
 def sincronizar_registros_antigos(db: Session = Depends(get_db)):

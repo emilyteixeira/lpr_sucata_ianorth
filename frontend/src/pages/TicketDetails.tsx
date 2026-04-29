@@ -100,7 +100,8 @@ export function TicketDetails() {
             } else {
                 alert("Erro ao finalizar o ticket no banco de dados.");
             }
-        } catch (e) {
+        } catch (error) {
+            console.error(error);
             alert("Erro de conexão ao salvar.");
         } finally {
             setSaving(false);
@@ -118,7 +119,7 @@ export function TicketDetails() {
             });
             if (res.ok) { const d = await res.json(); atualizarListaFotos(d.url); }
             else alert("Falha na captura.");
-        } catch (e) { alert("Erro."); } finally { setCapturando(false); }
+        } catch (error) { console.error(error); alert("Erro."); } finally { setCapturando(false); }
     };
 
     const handleUploadManual = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +143,7 @@ export function TicketDetails() {
                 setTicket(prev => prev ? ({...prev, fotos_avaria: nova} as EventoLPR) : null);
                 setFormData(prev => ({...prev, fotos_avaria: nova}));
             }
-        } catch(e) { alert("Erro."); }
+        } catch(error) { console.error(error); alert("Erro."); }
     }
 
     const atualizarListaFotos = (url: string) => {
@@ -190,6 +191,13 @@ export function TicketDetails() {
                         <Download size={16} /> Baixar Evidências
                     </button>
 
+                    <button
+                        onClick={() => window.open(`${API_BASE_URL}/eventos/${ticket.id}/relatorio-pdf`, "_blank")}
+                        className="flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-100 transition text-sm border border-slate-200 dark:border-slate-700"
+                    >
+                        <FileText size={16} /> Baixar relatório PDF
+                    </button>
+
 
                     <button 
                         onClick={async () => {
@@ -201,6 +209,17 @@ export function TicketDetails() {
                         className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 transition text-sm shadow-md disabled:opacity-50"
                     >
                         <Printer size={16} /> {gerandoPdf ? 'Gerando...' : 'Exportar R.I.M (PDF)'}
+                    </button>
+
+                    <button
+                        onClick={() =>
+                            navigate(`/cubagem/medicao/${ticket.placa_veiculo}`, {
+                                state: { returnTo: `/ticket/${ticket.id}` },
+                            })
+                        }
+                        className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded font-bold hover:bg-slate-800 transition text-sm shadow-md"
+                    >
+                        <Monitor size={16} /> Medição manual
                     </button>
 
 

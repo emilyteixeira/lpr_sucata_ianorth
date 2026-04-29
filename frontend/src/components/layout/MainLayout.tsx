@@ -3,9 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext'; 
 import { 
     Sun, Moon, LayoutDashboard, Menu, X, ChevronLeft, 
-    BarChart3, Settings, LogOut, History, 
-    UsersIcon,
-    SettingsIcon
+    BarChart3, LogOut, History, 
+    UsersIcon, SettingsIcon, Box, Ruler, Move3D, Settings2
 } from 'lucide-react';
 import { AuthContext } from '../../../contexts/AuthContext';
 
@@ -16,6 +15,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const isCubagemRoute = location.pathname.startsWith('/cubagem');
+  const cubagemTabs = [
+    { label: 'Live', path: '/cubagem', icon: <Box size={15} /> },
+    { label: 'Medição', path: '/cubagem/medicao', icon: <Move3D size={15} /> },
+    { label: 'Régua', path: '/cubagem/regua', icon: <Ruler size={15} /> },
+    { label: 'Calibração', path: '/cubagem/calibracao', icon: <Settings2 size={15} /> },
+  ];
 
   return (
     <div className="flex h-screen w-full bg-light-bg dark:bg-dark-bg text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
@@ -52,6 +58,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 label="Relatórios" 
                 active={location.pathname.includes('/relatorios')}
                 onClick={() => navigate('/relatorios')}   
+            />
+            <NavItem 
+                icon={<Box size={20}/>} 
+                label="Cubagem" 
+                active={location.pathname.startsWith('/cubagem')}
+                onClick={() => navigate('/cubagem')}   
             />
             
             {/* MENUS EXCLUSIVOS PARA ADMIN */}
@@ -97,7 +109,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <h2 className="text-lg font-semibold text-slate-700 dark:text-white hidden sm:block">
-                    Sistema de Classificação
+                    {isCubagemRoute ? 'Sistema de Cubagem' : 'Sistema de Classificação'}
                 </h2>
             </div>
             
@@ -123,6 +135,28 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-auto p-6 scroll-smooth bg-slate-50 dark:bg-[#0f172a]">
             <div className="max-w-7xl mx-auto h-full">
+                {isCubagemRoute && (
+                    <div className="mb-6 flex flex-wrap gap-2">
+                        {cubagemTabs.map((tab) => {
+                            const active = location.pathname === tab.path || (tab.path !== '/cubagem' && location.pathname.startsWith(tab.path));
+                            return (
+                                <button
+                                    key={tab.path}
+                                    type="button"
+                                    onClick={() => navigate(tab.path)}
+                                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                        active
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'border border-light-border bg-light-surface text-slate-600 hover:bg-slate-100 dark:border-dark-border dark:bg-dark-surface dark:text-slate-300 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
                 {children}
             </div>
         </main>

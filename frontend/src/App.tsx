@@ -8,6 +8,10 @@ import { Users } from './pages/Users';
 import { Reports } from './pages/Reports';       
 import { TicketDetails } from './pages/TicketDetails'; 
 import { Login } from './pages/Login';
+import { CubagemDashboard } from './pages/CubagemDashboard';
+import { CubagemMedicaoManual } from './pages/CubagemMedicaoManual';
+import { CubagemReguaDistancia } from './pages/CubagemReguaDistancia';
+import { CubagemCalibracao } from './pages/CubagemCalibracao';
 import { AuthContext, AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -45,6 +49,11 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/cubagem" element={<CubagemDashboard />} />
+        <Route path="/cubagem/medicao" element={<CubagemMedicaoManual />} />
+        <Route path="/cubagem/medicao/:placa" element={<CubagemMedicaoManual />} />
+        <Route path="/cubagem/regua" element={<CubagemReguaDistancia />} />
+        <Route path="/cubagem/calibracao" element={<CubagemCalibracao />} />
         
         {/* ROTAS DESBLOQUEADAS! */}
         <Route path="/ticket/:id" element={<TicketDetails />} />

@@ -14,6 +14,7 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+.claude/
 .DS_Store
 *.suo
 *.ntvs*
@@ -23,6 +24,8 @@ dist-ssr
 
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 backend/venv/
 backend/__pycache__/
