@@ -88,7 +88,8 @@ async def _stream_passthrough(path: str):
     url = f"{_base_url()}{path}"
     client = httpx.AsyncClient(timeout=None)
     try:
-        upstream = await client.stream("GET", url)
+        request = client.build_request("GET", url)
+        upstream = await client.send(request, stream=True)
     except httpx.HTTPError as exc:
         await client.aclose()
         raise HTTPException(status_code=502, detail=f"Falha no stream da cubagem: {exc}") from exc

@@ -96,11 +96,25 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 print(f"Erro ao iniciar Listener LPR {ip}: {e}")
 
-    yield
-    print("Parando Serviços...")
-    for l in listeners_ativos:
-        l.stop()
-    listeners_ativos.clear()
+    manutencao_stop = threading.Event()
+
+    def rotina_manutencao():
+        while not manutencao_stop.is_set():
+            limpar_arquivos_antigos()
+            manutencao_stop.wait(6 * 60 * 60)
+
+    manutencao_thread = threading.Thread(target=rotina_manutencao, daemon=True)
+    manutencao_thread.start()
+
+    try:
+        yield
+    finally:
+        print("Parando Serviços...")
+        manutencao_stop.set()
+        manutencao_thread.join(timeout=2)
+        for l in listeners_ativos:
+            l.stop()
+        listeners_ativos.clear()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -370,15 +384,15 @@ def reload_camera_service():
 
 
 def limpar_arquivos_antigos():
-    """Remove APENAS snapshots e vídeos ÓRFÃOS com mais de 7 dias."""
+    """Remove APENAS snapshots e vídeos ÓRFÃOS com mais de 3 dias."""
     db = database.SessionLocal()
     try:
         agora = time.time()
         limite_segundos = 3 * 24 * 60 * 60  # 3 dias
-        
+
         eventos = db.query(models.EventoVMS).all()
         arquivos_protegidos = set()
-        
+
         for e in eventos:
             if e.snapshot_url:
                 arquivos_protegidos.add(os.path.basename(e.snapshot_url))
@@ -387,27 +401,27 @@ def limpar_arquivos_antigos():
             if e.fotos_avaria:
                 for foto in e.fotos_avaria.split(','):
                     arquivos_protegidos.add(os.path.basename(foto))
-                    
+
         pastas = [
             os.path.join(STATIC_DIR, "snapshots"),
             os.path.join(STATIC_DIR, "videos")
         ]
-        
+
         removidos = 0
         for pasta in pastas:
             if not os.path.exists(pasta): continue
-            
+
             for arquivo in os.listdir(pasta):
                 caminho = os.path.join(pasta, arquivo)
                 if not os.path.isfile(caminho): continue
-                
+
                 if arquivo in arquivos_protegidos:
                     continue
-                    
+
                 if (agora - os.path.getmtime(caminho)) > limite_segundos:
                     os.remove(caminho)
                     removidos += 1
-                    
+
         if removidos > 0:
             print(f"Manutenção Inteligente: {removidos} arquivos órfãos removidos (Tickets protegidos!).")
     except Exception as e:

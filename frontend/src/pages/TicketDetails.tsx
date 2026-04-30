@@ -214,7 +214,7 @@ export function TicketDetails() {
                     <button
                         onClick={() =>
                             navigate(`/cubagem/medicao/${ticket.placa_veiculo}`, {
-                                state: { returnTo: `/ticket/${ticket.id}` },
+                                state: { returnTo: `/ticket/${ticket.id}`, eventoId: ticket.id },
                             })
                         }
                         className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded font-bold hover:bg-slate-800 transition text-sm shadow-md"
