@@ -12,15 +12,9 @@ import {
     MeasurementCanvas,
     type MeasurementLine,
 } from "../components/cubagem/MeasurementCanvas";
-import { API_BASE_URL } from "../config";
 import type { HomographyCalibration } from "../types";
 
 type MeasurementMode = "comprimento" | "largura" | "altura";
-
-type LocationState = {
-    returnTo?: string;
-    eventoId?: number;
-};
 
 const MODE_COLORS: Record<MeasurementMode, string> = {
     comprimento: "#16a34a",
@@ -61,7 +55,6 @@ export function CubagemMedicaoManual() {
     const { placa } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const routeState = location.state as LocationState | null;
     const [mode, setMode] = useState<MeasurementMode>("comprimento");
     const [placaInput, setPlacaInput] = useState(placa || "");
     const [calibration, setCalibration] = useState<HomographyCalibration | null>(null);
@@ -277,22 +270,8 @@ export function CubagemMedicaoManual() {
                                     largura_m,
                                     altura_m,
                                 });
-                                if (routeState?.eventoId) {
-                                    const response = await fetch(`${API_BASE_URL}/eventos/${routeState.eventoId}`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                            dim_comprimento: comprimento_m,
-                                            dim_largura: largura_m,
-                                            dim_altura: altura_m,
-                                        }),
-                                    });
-                                    if (!response.ok) {
-                                        throw new Error("Falha ao atualizar o ticket com a medição manual.");
-                                    }
-                                }
                                 alert("Medição manual salva com sucesso.");
-                                const returnTo = routeState?.returnTo;
+                                const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
                                 if (returnTo) {
                                     navigate(returnTo);
                                 } else {
