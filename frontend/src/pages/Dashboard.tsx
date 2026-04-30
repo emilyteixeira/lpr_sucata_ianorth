@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, CheckCircle, Clock, Weight } from 'lucide-react';
+import { Truck, CheckCircle, Clock, Weight, Search } from 'lucide-react';
 import { EventsTable } from '../components/dashboard/EventsTable';
 import { MediaModal } from '../components/dashboard/MediaModal';
+import { ManualSearchModal } from '../components/dashboard/ManualSearchModal';
 import type { EventoLPR } from '../types';
 import { API_BASE_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ export function Dashboard() {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const navigate = useNavigate();
+  const [modalBusca, setModalBusca] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -37,6 +39,7 @@ export function Dashboard() {
  
   const handleOpenImage = (url: string) => { setMediaUrl(url); setMediaType('image'); }
   const handleOpenVideo = (url: string) => { setMediaUrl(url); setMediaType('video'); }
+
 
   const todayDate = new Date().toISOString().split('T')[0]; 
   
@@ -130,12 +133,23 @@ export function Dashboard() {
         </div>
 
         <div className="flex justify-between items-center pt-4">
+            <div>
             <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
                 Fila de Classificação
             </h3>
             <span className="text-xs text-slate-500">Atualizando a cada 2s</span>
         </div>
-        
+
+            <button 
+                onClick={() => setModalBusca(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition shadow-sm"
+            >
+                <Search size={16} /> Busca Manual (S/ Placa)
+            </button>
+
+        </div>
+
+
         <EventsTable 
             eventos={eventosEmAberto} 
             onViewImage={handleOpenImage} 
@@ -143,8 +157,17 @@ export function Dashboard() {
         />
 
         {mediaUrl && (
-            <MediaModal url={mediaUrl} type={mediaType} onClose={() => setMediaUrl(null)} />
+            <MediaModal 
+            url={mediaUrl} 
+            type={mediaType} 
+            onClose={() => setMediaUrl(null)} />
         )}
+
+         <ManualSearchModal 
+            isOpen={modalBusca} 
+            onClose={() => setModalBusca(false)} 
+        />
+
     </div>
   );
 }

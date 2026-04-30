@@ -25,5 +25,6 @@ python-multipart
 pandas
 openpyxl
 passlib[bcrypt]
+bcrypt==3.2.2
 PyJWT
 reportlab==4.4.5

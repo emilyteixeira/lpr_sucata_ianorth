@@ -1,5 +1,6 @@
 import sys
 import os
+import glob
 import shutil
 import requests
 import urllib.parse
@@ -222,12 +223,12 @@ def get_garras_config():
             })
     return garras
 
-def processar_evento_camera(placa: str, origem: str):
-    t = threading.Thread(target=_processamento_com_tentativas, args=(placa, origem))
+def processar_evento_camera(placa: str, origem: str, user: str, password: str):
+    t = threading.Thread(target=_processamento_com_tentativas, args=(placa, origem, user, password))
     t.daemon = True
     t.start()
 
-def _processamento_com_tentativas(placa: str, origem: str):
+def _processamento_com_tentativas(placa: str, origem: str, user: str = "admin", password: str = "admin" ):
     print(f"Nova placa detectada: {placa} via {origem}. Iniciando auditoria...")
 
     global ultimas_placas_lidas
@@ -241,6 +242,34 @@ def _processamento_com_tentativas(placa: str, origem: str):
 
 
     ultimas_placas_lidas[placa] = agora
+
+    timestamp_str = agora.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp_file = agora.strftime("%Y%m%d_%H%M%S")
+
+    nome_arquivo_foto = f"{placa}_{timestamp_file}.jpg"
+    nome_arquivo_video = f"{placa}_{timestamp_file}.mp4"
+    ip_real_camera = origem.replace("Cam-", "")
+
+    threading.Thread(
+        target=gravar_video_evento,
+        args=(ip_real_camera, user, password, nome_arquivo_video, 15),
+        daemon=True
+    ).start()
+
+    def capturar_foto_atrasada():
+        print(f"[{placa}] Câmera engatilhada. Aguardando 1s para fotografar a carroceria...")
+        time.sleep(0.5)
+        try:
+            salvar_snapshot_camera(ip_real_camera, user, password, placa, nome_fixo=nome_arquivo_foto )
+            print(f"[{placa}] Foto da carroceria salva com sucesso!")
+        except Exception as e:
+            print(f"[{placa}] Falha ao salvar foto: {e}")
+
+    threading.Thread(target=capturar_foto_atrasada, daemon=True).start()
+
+    final_snapshot_url = f"/imagens/snapshots/{nome_arquivo_foto}"
+    final_video_url = f"/imagens/videos/{nome_arquivo_video}"
+
 
     max_tentativas = 6
     intervalo_segundos = 15
@@ -277,32 +306,9 @@ def _processamento_com_tentativas(placa: str, origem: str):
             del ultimas_placas_lidas[placa]
         return
 
-    ultimas_placas_lidas[placa] = datetime.now()
-
-    timestamp_str = agora.strftime("%Y-%m-%d %H:%M:%S")
-    timestamp_file = agora.strftime("%Y%m%d_%H%M%S")
 
     db = database.SessionLocal()
     try:
-        config = db.query(models.CameraConfig).first()
-        
-        final_snapshot_url = None
-        final_video_url = None
-
-        if config and config.is_active:
-            try:
-                nome_arquivo_foto = f"{placa}_{timestamp_file}.jpg"
-                nome_arquivo_video = f"{placa}_{timestamp_file}.mp4"
-                ip_real_camera = origem.replace("Cam-", "")
-
-                salvar_snapshot_camera(ip_real_camera, config.username, config.password, placa, nome_fixo=nome_arquivo_foto)
-                final_snapshot_url = f"/imagens/snapshots/{nome_arquivo_foto}"
-                
-                gravar_video_evento(ip_real_camera, config.username, config.password, nome_arquivo_video, duracao=15)
-                final_video_url = f"/imagens/videos/{nome_arquivo_video}"
-            except Exception as e:
-                print(f"Erro de mídia: {e}")
-
         try:
             dt_obj = datetime.fromisoformat(raw_date)
             data_formatada = dt_obj.strftime("%d/%m/%Y %H:%M")
@@ -361,6 +367,55 @@ def reload_camera_service():
                     print(f"Erro ao iniciar camera {ip}: {e}")
     finally:
         db.close() 
+
+
+def limpar_arquivos_antigos():
+    """Remove APENAS snapshots e vídeos ÓRFÃOS com mais de 7 dias."""
+    db = database.SessionLocal()
+    try:
+        agora = time.time()
+        limite_segundos = 3 * 24 * 60 * 60  # 3 dias
+        
+        eventos = db.query(models.EventoVMS).all()
+        arquivos_protegidos = set()
+        
+        for e in eventos:
+            if e.snapshot_url:
+                arquivos_protegidos.add(os.path.basename(e.snapshot_url))
+            if e.video_url:
+                arquivos_protegidos.add(os.path.basename(e.video_url))
+            if e.fotos_avaria:
+                for foto in e.fotos_avaria.split(','):
+                    arquivos_protegidos.add(os.path.basename(foto))
+                    
+        pastas = [
+            os.path.join(STATIC_DIR, "snapshots"),
+            os.path.join(STATIC_DIR, "videos")
+        ]
+        
+        removidos = 0
+        for pasta in pastas:
+            if not os.path.exists(pasta): continue
+            
+            for arquivo in os.listdir(pasta):
+                caminho = os.path.join(pasta, arquivo)
+                if not os.path.isfile(caminho): continue
+                
+                if arquivo in arquivos_protegidos:
+                    continue
+                    
+                if (agora - os.path.getmtime(caminho)) > limite_segundos:
+                    os.remove(caminho)
+                    removidos += 1
+                    
+        if removidos > 0:
+            print(f"Manutenção Inteligente: {removidos} arquivos órfãos removidos (Tickets protegidos!).")
+    except Exception as e:
+        print(f"Erro na limpeza de arquivos: {e}")
+    finally:
+        db.close()
+
+
 
 # ROTAS DA CÂMERA LPR - BANCO DE DADOS
 
@@ -577,6 +632,100 @@ def upload_foto_avaria(evento_id: int, file: UploadFile = File(...), db: Session
     db.commit()
     db.refresh(evento)
     return {"status": "Sucesso", "url": url_relativa, "lista_atual": evento.fotos_avaria}
+
+
+class BuscaManualRequest(BaseModel):
+    parametro: str #A placa por enquanto
+
+
+@app.post("/api/eventos/busca-manual")
+def busca_manual_sinobras(dados: BuscaManualRequest, db: Session = Depends(get_db)):
+    termo = dados.parametro.upper().strip().replace("-", "")
+
+    dados_api = sinobras.consultar_truck_arrival(termo)
+
+    if not dados_api:
+        raise HTTPException(status_code=404, detail="Não encontrado. Lembre-se de digitar a PLACA (e não o número do ticket).")
+
+    produto = str(dados_api.get('tipoProduto', '')).lower()
+    if 'sucata' not in produto:
+        raise HTTPException(status_code=400, detail=f"Carga Incompatível: O produto desta viagem é '{produto}'.")
+
+    raw_date = str(dados_api.get('dataHoraEntrada', ''))
+    hoje_iso = datetime.now().strftime("%Y-%m-%d")
+    hoje_br = datetime.now().strftime("%d/%m/%Y")
+
+    if hoje_iso not in raw_date and hoje_br not in raw_date:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Atenção: A placa {termo} tem um ticket preso no dia '{raw_date}'. Isso significa que o caminhão ainda não passou na balança hoje."
+        )
+
+    try:
+        dt_obj = datetime.fromisoformat(raw_date)
+        data_formatada = dt_obj.strftime("%d/%m/%Y %H:%M")
+        horario_oficial_painel = dt_obj.strftime("%Y-%m-%d %H:%M:%S") 
+    except:
+        data_formatada = raw_date
+        horario_oficial_painel = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    ultimo_evento = db.query(models.EventoVMS).filter(
+        models.EventoVMS.placa_veiculo.ilike(f"%{termo}%"),
+        models.EventoVMS.peso_tara > 0 
+    ).order_by(desc(models.EventoVMS.id)).first()
+
+    tara_hist = 0.0
+    comp_hist = 0.0
+    larg_hist = 0.0
+    alt_hist = 0.0
+
+    if ultimo_evento:
+        tara_hist = float(ultimo_evento.peso_tara or 0.0)
+        comp_hist = float(ultimo_evento.dim_comprimento or 0.0)
+        larg_hist = float(ultimo_evento.dim_largura or 0.0)
+        alt_hist = float(ultimo_evento.dim_altura or 0.0)
+
+    foto_encontrada = None
+    video_encontrado = None
+    padrao_foto = os.path.join(STATIC_DIR, "snapshots", f"{termo}_*.jpg")
+    fotos = glob.glob(padrao_foto)
+    if fotos:
+        foto_recente = sorted(fotos)[-1] 
+        foto_encontrada = f"/imagens/snapshots/{os.path.basename(foto_recente)}"
+        
+    padrao_video = os.path.join(STATIC_DIR, "videos", f"{termo}_*.mp4")
+    videos = glob.glob(padrao_video)
+    if videos:
+        video_recente = sorted(videos)[-1]
+        video_encontrado = f"/imagens/videos/{os.path.basename(video_recente)}"
+
+    novo_evento = models.EventoVMS(
+        timestamp_registro=horario_oficial_painel, 
+        placa_veiculo=termo,
+        camera_nome="Inclusão Manual",
+        ticket_id=dados_api.get('ticket', '0'),
+        status_ticket='Aberto',
+        fornecedor_nome=dados_api.get('fornecedor', 'Não Identificado'),
+        produto_declarado=dados_api.get('tipoProduto', 'Desconhecido'),
+        nota_fiscal=dados_api.get('notaFiscal', ''),
+        peso_nf=dados_api.get('peso_nf', 0.0),
+        peso_balanca=float(dados_api.get('pesagemInicial', 0.0)),
+        data_entrada_sinobras=data_formatada,
+        peso_tara=tara_hist,           
+        dim_comprimento=comp_hist,     
+        dim_largura=larg_hist,         
+        dim_altura=alt_hist,        
+        origem_dado="BUSCA_MANUAL",
+        snapshot_url=foto_encontrada,
+        video_url=video_encontrado
+    )
+
+    db.add(novo_evento)
+    db.commit()
+
+    return {"mensagem": "Ticket importado com sucesso! Dados e imagens associados."}
+
+
 
 # ROTAS DAS GARRAS
 

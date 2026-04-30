@@ -73,7 +73,7 @@ class IntelbrasLPRListener:
                                         continue
                                     
                                     print(f" SUCESSO! NOVA PLACA: {placa}")
-                                    self.callback(placa, f"Cam-{self.ip}")
+                                    self.callback(placa, f"Cam-{self.ip}", self.user, self.password)
                                     
                                     self.ultima_placa = placa
                                     self.ultimo_horario = agora
