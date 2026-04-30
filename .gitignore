@@ -28,8 +28,8 @@ dist-ssr
 !**/.env.example
 
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+*/__pycache__/
+*.pyc
 backend/src/static/snapshots/
 backend/src/static/videos/
 backend/*.db
